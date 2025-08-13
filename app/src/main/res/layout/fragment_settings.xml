@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingLeft="16dp"
+    android:paddingTop="15dp"
+    android:paddingRight="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:text="@string/work_time"
+        android:textColor="@color/secondColor" />
+
+    <SeekBar
+        android:id="@+id/work_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:max="59"
+        android:progress="24"
+        android:progressTint="@color/firstColor"
+        android:thumbTint="@color/thirdColor" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/break_time"
+        android:textColor="@color/secondColor" />
+
+    <SeekBar
+        android:id="@+id/break_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:max="9"
+        android:progress="4"
+        android:progressTint="@color/firstColor"
+        android:thumbTint="@color/thirdColor" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/long_break_time"
+        android:textColor="@color/secondColor" />
+
+    <SeekBar
+        android:id="@+id/long_break_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:max="29"
+        android:progress="14"
+        android:progressTint="@color/firstColor"
+        android:thumbTint="@color/thirdColor" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/works_before_a_long_break"
+        android:textColor="@color/secondColor" />
+
+    <SeekBar
+        android:id="@+id/works_before_a_long_break"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:max="6"
+        android:progress="2"
+        android:progressTint="@color/firstColor"
+        android:thumbTint="@color/thirdColor" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/daily_goal"
+        android:textColor="@color/secondColor" />
+
+    <SeekBar
+        android:id="@+id/goal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:max="14"
+        android:progress="6"
+        android:progressTint="@color/firstColor"
+        android:thumbTint="@color/thirdColor" />
+
+</LinearLayout>

@@ -1,6 +1,8 @@
 package com.example.pomodorotimer;
 
 import android.os.Bundle;
+import android.util.Log;
+
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,71 +17,168 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.example.pomodorotimer.ui.home.HomeFragment;
 import com.example.pomodorotimer.ui.settings.SettingsFragment;
 import com.example.pomodorotimer.ui.statistics.StatisticsFragment;
+import com.example.pomodorotimer.util.HandlerSharedPreferences;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
-public class MainActivity extends AppCompatActivity {
+import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+public class MainActivity extends AppCompatActivity implements HandlerSharedPreferences.OnWorkTimeChangeListener {
+
+    private static final String TAG = "MainActivity";
+    private Map<Integer, IconText> iconTextMap;
+    private ViewPager2 viewPager2;
     private TabLayout tabLayout;
-    private ViewPager2 viewPager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        // Initialize HandlerSharedPreferences activity
+        HandlerSharedPreferences.setActivity(this);
+
+        // Initialize views and setup UI
+        initializeViews();
+        setupViewPager();
+
+        // Register for work time changes
+        try {
+            HandlerSharedPreferences.getInstance().addWorkTimeChangeListener(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initializeViews() {
+        iconTextMap = new HashMap<>();
+        viewPager2 = findViewById(R.id.view_pager);
         tabLayout = findViewById(R.id.tab_layout);
-        viewPager = findViewById(R.id.view_pager);
+    }
 
-        ViewPagerAdapter adapter = new ViewPagerAdapter(this);
-        viewPager.setAdapter(adapter);
+    private void setupViewPager() {
+        OrdersPagerAdapterFactory adapter = new OrdersPagerAdapterFactory(this);
+        viewPager2.setAdapter(adapter);
 
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            switch (position) {
-                case 0:
-                    tab.setText("Home");
-                    break;
-                case 1:
-                    tab.setText("Settings");
-                    break;
-                case 2:
-                    tab.setText("Statistics");
-                    break;
-            }
+        new TabLayoutMediator(tabLayout, viewPager2, (tab, position) -> {
+            IconText iconText = getIconText(position);
+            tab.setIcon(iconText.getIcon());
+            tab.setText(iconText.getName());
         }).attach();
+    }
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+    @Override
+    public void onWorkTimeChanged(long newWorkTime) {
+        // Update UI immediately when work time changes
+        runOnUiThread(() -> {
+            updateTimerIfRunning(newWorkTime);
         });
     }
 
-    private class ViewPagerAdapter extends FragmentStateAdapter {
+    private void updateTimerIfRunning(long newWorkTime) {
+        // Find the HomeFragment and update its timer if it's running
+        Fragment homeFragment = getSupportFragmentManager().findFragmentByTag("f0");
+        if (homeFragment instanceof HomeFragment) {
+            ((HomeFragment) homeFragment).onWorkTimeChanged(newWorkTime);
+        }
+    }
 
-        public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Unregister to prevent memory leaks
+        try {
+            HandlerSharedPreferences.getInstance().removeWorkTimeChangeListener(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @NotNull
+    private IconText getIconText(int position) {
+        if (iconTextMap.containsKey(position)) {
+            return Objects.requireNonNull(iconTextMap.get(position));
+        } else {
+            IconText iconText = null;
+            switch (position) {
+                case 1:
+                    iconText = new IconText(R.drawable.ic_baseline_settings_24, "Settings");
+                    break;
+                case 2:
+                    iconText = new IconText(R.drawable.ic_baseline_access_time_24, "Statistics");
+                    break;
+                default:
+                    iconText = new IconText(R.drawable.ic_baseline_home_24, "Home");
+                    break;
+            }
+
+            iconTextMap.put(position, iconText);
+            return Objects.requireNonNull(iconText);
+        }
+    }
+
+    private static class OrdersPagerAdapterFactory extends FragmentStateAdapter {
+
+        private final Map<Integer, Fragment> integerFragmentMap;
+
+        public OrdersPagerAdapterFactory(@NonNull @NotNull FragmentActivity fragmentActivity) {
             super(fragmentActivity);
+            integerFragmentMap = new HashMap<>();
         }
 
         @NonNull
         @Override
         public Fragment createFragment(int position) {
-            switch (position) {
-                case 0:
-                    return new HomeFragment();
-                case 1:
-                    return new SettingsFragment();
-                case 2:
-                    return new StatisticsFragment();
-                default:
-                    return new HomeFragment();
+            Log.d(TAG, "createFragment: " + position);
+            if (integerFragmentMap.containsKey(position)) {
+                return Objects.requireNonNull(integerFragmentMap.get(position));
             }
+
+            Fragment fragment = null;
+            switch (position) {
+                case 2:
+                    Log.d(TAG, "createFragment: StatisticsFragment");
+                    fragment = new StatisticsFragment();
+                    break;
+                case 1:
+                    Log.d(TAG, "createFragment: SettingsFragment");
+                    fragment = new SettingsFragment();
+                    break;
+                default:
+                    Log.d(TAG, "createFragment: Default");
+                    fragment = new HomeFragment();
+                    break;
+            }
+
+            integerFragmentMap.put(position, fragment);
+            return fragment;
         }
 
         @Override
         public int getItemCount() {
-            return 3; // Broj tabova
+            return 3;
+        }
+    }
+
+    private static class IconText {
+        private final int icon;
+        private final String name;
+
+        public IconText(int icon, String name) {
+            this.icon = icon;
+            this.name = name;
+        }
+
+        public int getIcon() {
+            return icon;
+        }
+
+        public String getName() {
+            return name;
         }
     }
 }

@@ -3,6 +3,8 @@ package com.example.pomodorotimer.model.SeekBar;
 import android.util.Log;
 import android.widget.SeekBar;
 
+import com.example.pomodorotimer.util.HandlerSharedPreferences;
+
 
 public class BeforeALongBreakSeekBar implements SeekBar.OnSeekBarChangeListener {
 
@@ -21,5 +23,12 @@ public class BeforeALongBreakSeekBar implements SeekBar.OnSeekBarChangeListener 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         Log.d(TAG, "onStopTrackingTouch: " + (seekBar.getProgress() + 1));
+
+        int worksBeforeLongBreak = seekBar.getProgress() + 1;
+        try {
+            HandlerSharedPreferences.getInstance().setWorksBeforeLongBreak(worksBeforeLongBreak);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

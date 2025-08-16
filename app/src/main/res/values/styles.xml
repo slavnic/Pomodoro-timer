@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Existing calendar styles -->
+    <style name="CalendarDateTextAppearance" parent="android:TextAppearance.Small">
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="CalendarWeekDayTextAppearance" parent="android:TextAppearance.Small">
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Button styles -->
+    <style name="StatisticsToggleButton" parent="Widget.Material3.Button">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="StatisticsToggleButton.Selected">
+        <item name="backgroundTint">@color/firstColor</item>
+    </style>
+
+    <style name="StatisticsToggleButton.Unselected">
+        <item name="backgroundTint">@android:color/darker_gray</item>
+    </style>
+</resources>

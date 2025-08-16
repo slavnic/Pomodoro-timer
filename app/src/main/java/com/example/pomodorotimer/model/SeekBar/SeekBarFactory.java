@@ -22,11 +22,11 @@ public class SeekBarFactory {
 
     private SeekBarFactory() throws Exception {
         integerSeekBarMap = new HashMap<>();
-        initBarToRealValue(R.id.work_time);
-        initBarToRealValue(R.id.break_time);
-        initBarToRealValue(R.id.long_break_time);
-        initBarToRealValue(R.id.works_before_a_long_break);
-        initBarToRealValue(R.id.goal);
+        initBarToRealValue(R.id.seekBarWorkDuration);
+        initBarToRealValue(R.id.seekBarShortBreak);
+        initBarToRealValue(R.id.seekBarLongBreak);
+        initBarToRealValue(R.id.seekBarSessions);
+        initBarToRealValue(R.id.seekBarDailyGoal);
     }
 
     public static void setView(View view) {
@@ -45,23 +45,27 @@ public class SeekBarFactory {
     private void initBarToRealValue(int type) throws Exception {
         Log.d(TAG, "initBarToRealValue: " + type);
         SeekBar seekBar = getSeekBar(type);
-        long fullValue;
 
-        if (type == R.id.work_time) {
-            fullValue = HandlerSharedPreferences.getInstance().getWorkTime();
-        } else if (type == R.id.break_time) {
-            fullValue = HandlerSharedPreferences.getInstance().getBreakTime();
-        } else if (type == R.id.long_break_time) {
-            fullValue = HandlerSharedPreferences.getInstance().getLongBreakTime();
-        } else if (type == R.id.works_before_a_long_break) {
-            fullValue = HandlerSharedPreferences.getInstance().getWorksBeforeLongBreakTime();
-        } else if (type == R.id.goal) {
-            fullValue = HandlerSharedPreferences.getInstance().getDailyGoal();
+        if (type == R.id.seekBarWorkDuration) {
+            long fullValue = HandlerSharedPreferences.getInstance().getWorkTime();
+            seekBar.setProgress((int) HandlerTime.getInstance().getRealTime(fullValue));
+        } else if (type == R.id.seekBarShortBreak) {
+            long fullValue = HandlerSharedPreferences.getInstance().getBreakTime();
+            seekBar.setProgress((int) HandlerTime.getInstance().getRealTime(fullValue));
+        } else if (type == R.id.seekBarLongBreak) {
+            long fullValue = HandlerSharedPreferences.getInstance().getLongBreakTime();
+            seekBar.setProgress((int) HandlerTime.getInstance().getRealTime(fullValue));
+        } else if (type == R.id.seekBarSessions) {
+            // Sessions before long break - this is just a number, not time
+            int sessions = HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak();
+            seekBar.setProgress(sessions);
+        } else if (type == R.id.seekBarDailyGoal) {
+            // Daily goal - number of sessions per day
+            int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
+            seekBar.setProgress(dailyGoal);
         } else {
             throw new Exception("type is not identified");
         }
-
-        seekBar.setProgress((int) HandlerTime.getInstance().getRealTime(fullValue));
     }
 
     public SeekBar getSeekBar(int type) throws Exception {
@@ -76,15 +80,15 @@ public class SeekBarFactory {
                 throw new Exception("type is not identified");
             }
 
-            if (type == R.id.work_time) {
+            if (type == R.id.seekBarWorkDuration) {
                 seekBar.setOnSeekBarChangeListener(new WorkSeekBar());
-            } else if (type == R.id.break_time) {
+            } else if (type == R.id.seekBarShortBreak) {
                 seekBar.setOnSeekBarChangeListener(new BreakSeekBar());
-            } else if (type == R.id.long_break_time) {
+            } else if (type == R.id.seekBarLongBreak) {
                 seekBar.setOnSeekBarChangeListener(new LongBreakSeekBar());
-            } else if (type == R.id.works_before_a_long_break) {
-                seekBar.setOnSeekBarChangeListener(new BeforeALongBreakSeekBar());
-            } else if (type == R.id.goal) {
+            } else if (type == R.id.seekBarSessions) {
+                seekBar.setOnSeekBarChangeListener(new SessionsSeekBar());
+            } else if (type == R.id.seekBarDailyGoal) {
                 seekBar.setOnSeekBarChangeListener(new GoalSeekBar());
             } else {
                 throw new Exception("type is not identified");

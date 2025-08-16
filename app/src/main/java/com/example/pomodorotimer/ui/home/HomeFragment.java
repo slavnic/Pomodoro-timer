@@ -16,15 +16,13 @@ import com.example.pomodorotimer.util.HandlerProgressBar;
 import com.example.pomodorotimer.util.HandlerSharedPreferences;
 
 public class HomeFragment extends Fragment implements
-        HandlerSharedPreferences.OnWorkTimeChangeListener,
-        HandlerSharedPreferences.OnBreakTimeChangeListener,
-        HandlerSharedPreferences.OnLongBreakTimeChangeListener,
-        HandlerSharedPreferences.OnWorksBeforeLongBreakChangeListener,
-        HandlerSharedPreferences.OnDailyGoalChangeListener,
-        HandlerCountDownTime.OnWorkSessionCompletedListener {
+        HandlerCountDownTime.OnWorkSessionCompletedListener,
+        HandlerSharedPreferences.OnTimeChangeListener {
 
     private static final String TAG = "HomeFragment";
     private View rootView;
+    private HandlerCountDownTime handlerCountDownTime;
+    private HandlerSharedPreferences handlerSharedPreferences;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -71,25 +69,25 @@ public class HomeFragment extends Fragment implements
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Register for all timer changes
         try {
-            HandlerSharedPreferences sharedPrefs = HandlerSharedPreferences.getInstance();
-            if (sharedPrefs != null) {
-                sharedPrefs.addWorkTimeChangeListener(this);
-                sharedPrefs.addBreakTimeChangeListener(this);
-                sharedPrefs.addLongBreakTimeChangeListener(this);
-                sharedPrefs.addWorksBeforeLongBreakChangeListener(this);
-                sharedPrefs.addDailyGoalChangeListener(this);
+            // Get HandlerCountDownTime instance
+            handlerCountDownTime = HandlerCountDownTime.getInstance();
+            if (handlerCountDownTime != null) {
+                handlerCountDownTime.setOnWorkSessionCompletedListener(this);
+                Log.d(TAG, "Registered for work session completion");
+            } else {
+                Log.e(TAG, "HandlerCountDownTime instance is null");
+            }
+
+            // Register for time change notifications
+            handlerSharedPreferences = HandlerSharedPreferences.getInstance();
+            if (handlerSharedPreferences != null) {
+                handlerSharedPreferences.addOnTimeChangeListener(this);
+                Log.d(TAG, "Registered for time change notifications");
             } else {
                 Log.e(TAG, "HandlerSharedPreferences instance is null");
             }
 
-            // Register for work session completion
-            HandlerCountDownTime countDownHandler = HandlerCountDownTime.getInstance();
-            if (countDownHandler != null) {
-                countDownHandler.setOnWorkSessionCompletedListener(this);
-                Log.d(TAG, "Registered for work session completion");
-            }
         } catch (Exception e) {
             Log.e(TAG, "Error registering listeners", e);
             e.printStackTrace();
@@ -113,118 +111,48 @@ public class HomeFragment extends Fragment implements
         }
     }
 
+    // Implementation of OnTimeChangeListener
     @Override
-    public void onWorkTimeChanged(long newWorkTime) {
-        Log.d(TAG, "Work time changed to: " + newWorkTime + " minutes");
-
+    public void onWorkTimeChanged(long workTimeMs) {
+        Log.d(TAG, "Work time changed to: " + workTimeMs + " ms");
         try {
-            HandlerCountDownTime countDownHandler = HandlerCountDownTime.getInstance();
-            if (countDownHandler == null) {
-                Log.e(TAG, "HandlerCountDownTime instance is null");
-                return;
-            }
-
-            // Update only if currently in work mode
-            if (countDownHandler.isInWorkMode() && countDownHandler.isRunning()) {
-                Log.d(TAG, "Timer is running in work mode, restarting with new work time");
-                countDownHandler.restartWithNewWorkTime(newWorkTime);
-            } else if (!countDownHandler.isRunning()) {
-                Log.d(TAG, "Timer not running, updating display only");
+            if (handlerCountDownTime != null && !handlerCountDownTime.isRunning()) {
+                Log.d(TAG, "Timer not running, recreating countdown with new time");
+                // Reinitialize the countdown with new time
                 if (rootView != null) {
-                    manageCountDownTime(rootView);
+                    HandlerCountDownTime.setCountDown(rootView);
                 }
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating work time: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onBreakTimeChanged(long newBreakTime) {
-        Log.d(TAG, "Break time changed to: " + newBreakTime + " minutes");
-
-        try {
-            HandlerCountDownTime countDownHandler = HandlerCountDownTime.getInstance();
-            if (countDownHandler == null) {
-                Log.e(TAG, "HandlerCountDownTime instance is null");
-                return;
-            }
-
-            // Update only if currently in break mode
-            if (countDownHandler.isInBreakMode() && countDownHandler.isRunning()) {
-                Log.d(TAG, "Timer is running in break mode, restarting with new break time");
-                countDownHandler.restartWithNewBreakTime(newBreakTime);
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating break time: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onLongBreakTimeChanged(long newLongBreakTime) {
-        Log.d(TAG, "Long break time changed to: " + newLongBreakTime + " minutes");
-
-        try {
-            HandlerCountDownTime countDownHandler = HandlerCountDownTime.getInstance();
-            if (countDownHandler == null) {
-                Log.e(TAG, "HandlerCountDownTime instance is null");
-                return;
-            }
-
-            // Update only if currently in long break mode
-            if (countDownHandler.isInLongBreakMode() && countDownHandler.isRunning()) {
-                Log.d(TAG, "Timer is running in long break mode, restarting with new long break time");
-                countDownHandler.restartWithNewLongBreakTime(newLongBreakTime);
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating long break time: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onWorksBeforeLongBreakChanged(int newWorksBeforeLongBreak) {
-        Log.d(TAG, "Works before long break changed to: " + newWorksBeforeLongBreak);
-    }
-
-    @Override
-    public void onDailyGoalChanged(int newDailyGoal) {
-        Log.d(TAG, "Daily goal changed to: " + newDailyGoal);
-        try {
-            HandlerProgressBar progressBar = HandlerProgressBar.getInstance();
-            if (progressBar != null) {
-                progressBar.updateDailyGoal(newDailyGoal);
-                Log.d(TAG, "Daily goal updated, progress recalculated");
             } else {
-                Log.e(TAG, "HandlerProgressBar instance is null");
+                Log.d(TAG, "Timer is running, changes will apply after current session");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error updating daily goal in progress bar", e);
+            Log.e(TAG, "Error handling work time change", e);
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onBreakTimeChanged(long breakTimeMs) {
+        Log.d(TAG, "Break time changed to: " + breakTimeMs + " ms");
+        // Handle break time change if needed
+    }
+
+    @Override
+    public void onLongBreakTimeChanged(long longBreakTimeMs) {
+        Log.d(TAG, "Long break time changed to: " + longBreakTimeMs + " ms");
+        // Handle long break time change if needed
     }
 
     @Override
     public void onDestroyView() {
-        // Unregister all listeners to prevent memory leaks
         try {
-            HandlerSharedPreferences sharedPrefs = HandlerSharedPreferences.getInstance();
-            if (sharedPrefs != null) {
-                sharedPrefs.removeWorkTimeChangeListener(this);
-                sharedPrefs.removeBreakTimeChangeListener(this);
-                sharedPrefs.removeLongBreakTimeChangeListener(this);
-                sharedPrefs.removeWorksBeforeLongBreakChangeListener(this);
-                sharedPrefs.removeDailyGoalChangeListener(this);
+            // Unregister listeners
+            if (handlerCountDownTime != null) {
+                handlerCountDownTime.setOnWorkSessionCompletedListener(null);
             }
 
-            HandlerCountDownTime countDownHandler = HandlerCountDownTime.getInstance();
-            if (countDownHandler != null) {
-                countDownHandler.setOnWorkSessionCompletedListener(null);
+            if (handlerSharedPreferences != null) {
+                handlerSharedPreferences.removeOnTimeChangeListener(this);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error unregistering listeners", e);
@@ -233,6 +161,8 @@ public class HomeFragment extends Fragment implements
 
         super.onDestroyView();
         rootView = null;
+        handlerCountDownTime = null;
+        handlerSharedPreferences = null;
         Log.d(TAG, "onDestroyView: ");
     }
 
@@ -260,9 +190,8 @@ public class HomeFragment extends Fragment implements
         super.onPause();
         Log.d(TAG, "onPause: ");
         try {
-            HandlerCountDownTime countDownHandler = HandlerCountDownTime.getInstance();
-            if (countDownHandler != null) {
-                countDownHandler.goOnPause();
+            if (handlerCountDownTime != null) {
+                handlerCountDownTime.goOnPause();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error handling pause", e);

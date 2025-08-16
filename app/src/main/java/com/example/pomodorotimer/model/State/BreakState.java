@@ -27,20 +27,18 @@ public class BreakState extends State {
 
         try {
             /*
-             *  SET BREAK COLOR AT COUNTDOWN OBJECT
+             * SET BREAK COLOR AT COUNTDOWN OBJECT
              * */
-            HandlerCountDownTime.getInstance().setBreakColor();
+            // UKLONJEN increaseSession() iz ovde jer break ne treba da se računa kao sesija
+            long realSessionsBeforeLongBreak = HandlerTime.getInstance().getRealTime(HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak());
 
-            // IF IS THE TIME OF LONG BREAK THE PROGRAM WILL START A COUNTDOWN WITH LONG BREAK TIME.
-            ContextState.getInstance().increaseSession();
-            long realWorksBeforeLongBreakTime = HandlerTime.getInstance().getRealTime(HandlerSharedPreferences.getInstance().getWorksBeforeLongBreakTime());
-
-            if (ContextState.getInstance().getCurrentSession() >= realWorksBeforeLongBreakTime) {
+            if (ContextState.getInstance().getCurrentSession() >= realSessionsBeforeLongBreak) {
                 Log.d(BREAK_STATE, "start: " + "I AM IN THE LONG BREAK TIME!");
 
                 /*
-                 * SET TIMER MODE TO LONG BREAK
+                 * SET LONG BREAK COLOR AND TIMER MODE
                  */
+                HandlerCountDownTime.getInstance().setLongBreakColor();
                 HandlerCountDownTime.getInstance().setTimerMode(HandlerCountDownTime.TimerMode.LONG_BREAK);
 
                 /*
@@ -51,8 +49,9 @@ public class BreakState extends State {
                 HandlerCountDownTime.getInstance().getmCvCountdownView().start(HandlerSharedPreferences.getInstance().getLongBreakTime());
             } else {
                 /*
-                 * SET TIMER MODE TO REGULAR BREAK
+                 * SET REGULAR BREAK COLOR AND TIMER MODE
                  */
+                HandlerCountDownTime.getInstance().setBreakColor();
                 HandlerCountDownTime.getInstance().setTimerMode(HandlerCountDownTime.TimerMode.BREAK);
 
                 HandlerAlert.getInstance().showToast("Take a break");

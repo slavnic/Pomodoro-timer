@@ -22,21 +22,20 @@ public class WorkState extends State {
     /*START STATE*/
     @Override
     public void start() {
+        Log.d(WORK_STATE, "I AM IN START.");
 
         try {
             /*
-             *  SET WORK COLOR AT COUNTDOWN OBJECT
+             * SET WORK COLOR AND TIMER MODE
              * */
             HandlerCountDownTime.getInstance().setWorkColor();
-
-            /*
-             * SET TIMER MODE TO WORK
-             */
             HandlerCountDownTime.getInstance().setTimerMode(HandlerCountDownTime.TimerMode.WORK);
 
-            HandlerAlert.getInstance().showToast("Start Work");
-            Log.d(WORK_STATE, "start: " + HandlerSharedPreferences.getInstance().getWorkTime());
+            ContextState.getInstance().increaseSession();
+
+            HandlerAlert.getInstance().showToast("Focus time!");
             HandlerCountDownTime.getInstance().getmCvCountdownView().start(HandlerSharedPreferences.getInstance().getWorkTime());
+
         } catch (Exception e) {
             e.printStackTrace();
         }

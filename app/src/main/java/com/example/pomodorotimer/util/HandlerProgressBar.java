@@ -169,6 +169,20 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         }
     }
 
+    public void initializeTodayProgress() {
+        Log.d(TAG, "Initializing today's progress");
+        try {
+            int completedSessions = HandlerDB.getInstance().getTotalSessionsToday();
+            int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
+
+            Log.d(TAG, "Today's progress: " + completedSessions + "/" + dailyGoal + " sessions");
+            updateProgressBar(completedSessions, dailyGoal);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing today's progress", e);
+        }
+    }
+
     public void incrementTodaysProgress() {
         try {
             int dailyGoal = (int) HandlerSharedPreferences.getInstance().getDailyGoal();
@@ -189,15 +203,86 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         }
     }
 
+    private void updateProgressBar(int completedSessions, int dailyGoal) {
+        if (numberProgressBar != null) {
+            // Za NumberProgressBar koristimo procenat umesto direktnih vrednosti
+            int progressPercentage = 0;
+            if (dailyGoal > 0) {
+                progressPercentage = Math.min(100, (completedSessions * 100) / dailyGoal);
+            }
+
+            numberProgressBar.setProgress(progressPercentage);
+
+            Log.d(TAG, "Progress bar updated: " + completedSessions + "/" + dailyGoal + " sessions (" + progressPercentage + "%)");
+
+            // Ažuriraj tekst ako postoji
+            updateProgressText(completedSessions, dailyGoal);
+        } else {
+            Log.w(TAG, "Progress bar is null");
+        }
+    }
+
     public void onSessionCompleted() {
-        Log.d(TAG, "onSessionCompleted - updating progress");
-        updateProgressBasedOnSessions();
+        Log.d(TAG, "onSessionCompleted called");
+        try {
+            // Dobij današnji broj kompletnih sesija iz baze
+            int completedSessions = HandlerDB.getInstance().getTotalSessionsToday();
+            int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
+
+            Log.d(TAG, "Completed sessions today: " + completedSessions + ", Daily goal: " + dailyGoal);
+
+            // Ažuriraj progress bar
+            updateProgressBar(completedSessions, dailyGoal);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating progress bar", e);
+            e.printStackTrace();
+        }
+    }
+
+    private void updateProgressText(int completedSessions, int dailyGoal) {
     }
 
     @Override
     public void onDailyGoalChanged(int newDailyGoal) {
         Log.d(TAG, "onDailyGoalChanged: " + newDailyGoal + " sessions");
-        updateDailyGoal(newDailyGoal);
+
+        // Ensure UI update happens on the main thread
+        if (numberProgressBar != null && context != null) {
+            if (context instanceof android.app.Activity) {
+                ((android.app.Activity) context).runOnUiThread(() -> {
+                    updateDailyGoal(newDailyGoal);
+                });
+            } else {
+                // Fallback for non-activity contexts
+                android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                mainHandler.post(() -> {
+                    updateDailyGoal(newDailyGoal);
+                });
+            }
+        } else {
+            // Direct update if context is not available
+            updateDailyGoal(newDailyGoal);
+        }
+    }
+
+    public void onDailyGoalChanged() {
+        Log.d(TAG, "Daily goal changed - updating progress bar");
+        try {
+            int completedSessions = HandlerDB.getInstance().getTotalSessionsToday();
+            int newDailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
+
+            Log.d(TAG, "New daily goal: " + newDailyGoal + ", Completed sessions: " + completedSessions);
+            updateProgressBar(completedSessions, newDailyGoal);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating progress bar after daily goal change", e);
+        }
+    }
+
+    public void refreshProgress() {
+        Log.d(TAG, "Refreshing progress bar");
+        initializeTodayProgress();
     }
 
 

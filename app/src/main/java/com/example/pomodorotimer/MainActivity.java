@@ -1,5 +1,6 @@
 package com.example.pomodorotimer;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -14,9 +15,9 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.example.pomodorotimer.ui.home.HomeFragment;
-import com.example.pomodorotimer.ui.settings.SettingsFragment;
 import com.example.pomodorotimer.ui.statistics.StatisticsFragment;
+import com.example.pomodorotimer.ui.settings.SettingsFragment;
+import com.example.pomodorotimer.ui.home.HomeFragment;
 import com.example.pomodorotimer.util.HandlerSharedPreferences;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -27,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity implements HandlerSharedPreferences.OnWorkTimeChangeListener {
+public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private Map<Integer, IconText> iconTextMap;
@@ -37,20 +38,40 @@ public class MainActivity extends AppCompatActivity implements HandlerSharedPref
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        // Initialize HandlerSharedPreferences activity
-        HandlerSharedPreferences.setActivity(this);
+        getWindow().getDecorView().setBackgroundColor(Color.WHITE);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        // Initialize HandlerSharedPreferences
+        HandlerSharedPreferences.getInstance(this);
 
         // Initialize views and setup UI
         initializeViews();
         setupViewPager();
+    }
 
-        // Register for work time changes
+    @Override
+    protected void onResume() {
+        super.onResume();
+
         try {
-            HandlerSharedPreferences.getInstance().addWorkTimeChangeListener(this);
+            viewPager2.post(() -> {
+                try {
+                    com.example.pomodorotimer.util.HandlerProgressBar.getInstance().initializeTodayProgress();
+                    Log.d(TAG, "Progress bar initialized");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error initializing progress bar", e);
+                }
+            });
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error in onResume", e);
         }
     }
 
@@ -69,33 +90,6 @@ public class MainActivity extends AppCompatActivity implements HandlerSharedPref
             tab.setIcon(iconText.getIcon());
             tab.setText(iconText.getName());
         }).attach();
-    }
-
-    @Override
-    public void onWorkTimeChanged(long newWorkTime) {
-        // Update UI immediately when work time changes
-        runOnUiThread(() -> {
-            updateTimerIfRunning(newWorkTime);
-        });
-    }
-
-    private void updateTimerIfRunning(long newWorkTime) {
-        // Find the HomeFragment and update its timer if it's running
-        Fragment homeFragment = getSupportFragmentManager().findFragmentByTag("f0");
-        if (homeFragment instanceof HomeFragment) {
-            ((HomeFragment) homeFragment).onWorkTimeChanged(newWorkTime);
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Unregister to prevent memory leaks
-        try {
-            HandlerSharedPreferences.getInstance().removeWorkTimeChangeListener(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @NotNull

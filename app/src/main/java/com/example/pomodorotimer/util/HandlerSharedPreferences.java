@@ -1,288 +1,163 @@
 package com.example.pomodorotimer.util;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
-
-import com.example.pomodorotimer.R;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HandlerSharedPreferences {
-
     private static final String TAG = "HandlerSharedPreferences";
-    @SuppressLint("StaticFieldLeak")
     private static HandlerSharedPreferences instance;
-    private static Activity activity;
+    private SharedPreferences sharedPreferences;
+    private List<OnTimeChangeListener> timeChangeListeners = new ArrayList<>();
+    private List<OnDailyGoalChangeListener> dailyGoalChangeListeners = new ArrayList<>();
 
-    private final String WORKS_BEFORE_LONG_BREAK_TIME_ID = "WORKS_BEFORE_LONG_BREAK_TIME_ID";
-    private final String WORK_ID = "WORK_ID";
-    private final String BREAK_ID = "BREAK_ID";
-    private final String LONG_BREAK_ID = "LONG_BREAK_ID";
-    private final String DAILY_GOAL_ID = "DAILY_GOAL_ID";
+    private static final String WORK_TIME_KEY = "work_time";
+    private static final String BREAK_TIME_KEY = "break_time";
+    private static final String LONG_BREAK_TIME_KEY = "long_break_time";
+    private static final String SESSIONS_BEFORE_LONG_BREAK_KEY = "sessions_before_long_break";
+    private static final String DAILY_GOAL_KEY = "daily_goal";
 
-    // Initialize default values properly
-    private final long DEFAULT_TIME_WORK;
-    private final long DEFAULT_TIME_BREAK;
-    private final long DEFAULT_TIME_WORKS_BEFORE_LONG_BREAK;
-    private final long DEFAULT_TIME_LONG_BREAK;
-    private final long DEFAULT_TIME_DAILY_GOAL;
-
-    // For real-time updates
-    private Set<OnWorkTimeChangeListener> workTimeListeners = new HashSet<>();
-    private Set<OnBreakTimeChangeListener> breakTimeListeners = new HashSet<>();
-    private Set<OnLongBreakTimeChangeListener> longBreakTimeListeners = new HashSet<>();
-    private Set<OnWorksBeforeLongBreakChangeListener> worksBeforeLongBreakListeners = new HashSet<>();
-    private Set<OnDailyGoalChangeListener> dailyGoalListeners = new HashSet<>();
-
-    // Interface za sve listener-e
-    public interface OnWorkTimeChangeListener {
-        void onWorkTimeChanged(long newWorkTime);
-    }
-
-    public interface OnBreakTimeChangeListener {
-        void onBreakTimeChanged(long newBreakTime);
-    }
-
-    public interface OnLongBreakTimeChangeListener {
-        void onLongBreakTimeChanged(long newLongBreakTime);
-    }
-
-    public interface OnWorksBeforeLongBreakChangeListener {
-        void onWorksBeforeLongBreakChanged(int newWorksBeforeLongBreak);
+    public interface OnTimeChangeListener {
+        void onWorkTimeChanged(long workTimeMs);
+        void onBreakTimeChanged(long breakTimeMs);
+        void onLongBreakTimeChanged(long longBreakTimeMs);
     }
 
     public interface OnDailyGoalChangeListener {
         void onDailyGoalChanged(int newDailyGoal);
     }
 
-    private HandlerSharedPreferences() throws Exception {
-        HandlerStringToInt.setContext(activity.getBaseContext());
-        DEFAULT_TIME_WORK = HandlerStringToInt.getInstance().getIntToString(R.string.work_time_default);
-        DEFAULT_TIME_BREAK = HandlerStringToInt.getInstance().getIntToString(R.string.break_time_default);
-        DEFAULT_TIME_WORKS_BEFORE_LONG_BREAK = HandlerStringToInt.getInstance().getIntToString(R.string.works_before_a_long_break_default);
-        DEFAULT_TIME_LONG_BREAK = HandlerStringToInt.getInstance().getIntToString(R.string.long_break_time_default);
-        DEFAULT_TIME_DAILY_GOAL = HandlerStringToInt.getInstance().getIntToString(R.string.daily_goal_default);
+    private HandlerSharedPreferences(Context context) {
+        sharedPreferences = context.getSharedPreferences("PomodoroPrefs", Context.MODE_PRIVATE);
     }
 
-    public static HandlerSharedPreferences getInstance() throws Exception {
-        if (activity == null)
-            throw new Exception("activity == null");
-
-        if (instance == null)
-            instance = new HandlerSharedPreferences();
+    public static synchronized HandlerSharedPreferences getInstance(Context context) {
+        if (instance == null) {
+            instance = new HandlerSharedPreferences(context);
+        }
         return instance;
     }
 
-    public static void setActivity(@NotNull Activity activity) {
-        HandlerSharedPreferences.activity = activity;
+    public static HandlerSharedPreferences getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("HandlerSharedPreferences must be initialized with context first");
+        }
+        return instance;
     }
 
-    public void addWorkTimeChangeListener(OnWorkTimeChangeListener listener) {
-        if (listener != null) {
-            workTimeListeners.add(listener);
-            Log.d(TAG, "Added work time listener: " + listener.getClass().getSimpleName());
-        } else {
-            Log.w(TAG, "Attempted to add null work time listener");
+    // Time change listener management
+    public void addOnTimeChangeListener(OnTimeChangeListener listener) {
+        if (listener != null && !timeChangeListeners.contains(listener)) {
+            timeChangeListeners.add(listener);
+            Log.d(TAG, "Added time change listener. Total listeners: " + timeChangeListeners.size());
         }
     }
 
-    public void removeWorkTimeChangeListener(OnWorkTimeChangeListener listener) {
-        workTimeListeners.remove(listener);
-    }
-
-    public void addBreakTimeChangeListener(OnBreakTimeChangeListener listener) {
+    public void removeOnTimeChangeListener(OnTimeChangeListener listener) {
         if (listener != null) {
-            breakTimeListeners.add(listener);
-            Log.d(TAG, "Added break time listener: " + listener.getClass().getSimpleName());
-        } else {
-            Log.w(TAG, "Attempted to add null break time listener");
+            timeChangeListeners.remove(listener);
+            Log.d(TAG, "Removed time change listener. Total listeners: " + timeChangeListeners.size());
         }
     }
 
-    public void removeBreakTimeChangeListener(OnBreakTimeChangeListener listener) {
-        breakTimeListeners.remove(listener);
-    }
-
-    public void addLongBreakTimeChangeListener(OnLongBreakTimeChangeListener listener) {
-        if (listener != null) {
-            longBreakTimeListeners.add(listener);
-            Log.d(TAG, "Added long break time listener: " + listener.getClass().getSimpleName());
-        } else {
-            Log.w(TAG, "Attempted to add null long break time listener");
-        }
-    }
-
-    public void removeLongBreakTimeChangeListener(OnLongBreakTimeChangeListener listener) {
-        longBreakTimeListeners.remove(listener);
-    }
-
-    public void addWorksBeforeLongBreakChangeListener(OnWorksBeforeLongBreakChangeListener listener) {
-        if (listener != null) {
-            worksBeforeLongBreakListeners.add(listener);
-            Log.d(TAG, "Added works before long break listener: " + listener.getClass().getSimpleName());
-        } else {
-            Log.w(TAG, "Attempted to add null works before long break listener");
-        }
-    }
-
-    public void removeWorksBeforeLongBreakChangeListener(OnWorksBeforeLongBreakChangeListener listener) {
-        worksBeforeLongBreakListeners.remove(listener);
-    }
-
+    // Daily goal change listener management
     public void addDailyGoalChangeListener(OnDailyGoalChangeListener listener) {
-        if (listener != null) {
-            dailyGoalListeners.add(listener);
-            Log.d(TAG, "Added daily goal listener: " + listener.getClass().getSimpleName());
-        } else {
-            Log.w(TAG, "Attempted to add null daily goal listener");
+        if (listener != null && !dailyGoalChangeListeners.contains(listener)) {
+            dailyGoalChangeListeners.add(listener);
+            Log.d(TAG, "Added daily goal change listener. Total listeners: " + dailyGoalChangeListeners.size());
         }
     }
 
     public void removeDailyGoalChangeListener(OnDailyGoalChangeListener listener) {
-        dailyGoalListeners.remove(listener);
+        if (listener != null) {
+            dailyGoalChangeListeners.remove(listener);
+            Log.d(TAG, "Removed daily goal change listener. Total listeners: " + dailyGoalChangeListeners.size());
+        }
     }
 
-    private SharedPreferences.Editor getEditor() {
-        SharedPreferences sharedPref = activity.getPreferences(Context.MODE_PRIVATE);
-        return sharedPref.edit();
+    // Work Time
+    public void setWorkTime(long workTimeMs) {
+        Log.d(TAG, "setWorkTime: " + workTimeMs + " ms");
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong(WORK_TIME_KEY, workTimeMs);
+        editor.apply();
+
+        // Notify listeners
+        for (OnTimeChangeListener listener : timeChangeListeners) {
+            listener.onWorkTimeChanged(workTimeMs);
+        }
     }
 
     public long getWorkTime() {
-        SharedPreferences getShareData = activity.getPreferences(Context.MODE_PRIVATE);
-        Log.d(TAG, "getWorkTime: " + HandlerTime.getInstance().getTime(getShareData.getLong(WORK_ID, DEFAULT_TIME_WORK)));
-        return HandlerTime.getInstance().getTime(getShareData.getLong(WORK_ID, DEFAULT_TIME_WORK));
+        long workTime = sharedPreferences.getLong(WORK_TIME_KEY, 25 * 60 * 1000L);
+        Log.d(TAG, "getWorkTime: " + workTime + " ms");
+        return workTime;
     }
 
-    public void setWorkTime(long time) {
-        Log.d(TAG, "setWorkTime: " + time);
-        SharedPreferences.Editor editor = getEditor();
-        editor.putLong(WORK_ID, time);
+    // Break Time
+    public void setBreakTime(long breakTimeMs) {
+        Log.d(TAG, "setBreakTime: " + breakTimeMs + " ms");
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong(BREAK_TIME_KEY, breakTimeMs);
         editor.apply();
 
-        // Notify all listeners for real-time updates
-        for (OnWorkTimeChangeListener listener : workTimeListeners) {
-            if (listener != null) {
-                try {
-                    listener.onWorkTimeChanged(time);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error notifying work time listener", e);
-                }
-            } else {
-                Log.w(TAG, "Found null listener in workTimeListeners");
-            }
+        // Notify listeners
+        for (OnTimeChangeListener listener : timeChangeListeners) {
+            listener.onBreakTimeChanged(breakTimeMs);
         }
     }
 
     public long getBreakTime() {
-        SharedPreferences getShareData = activity.getPreferences(Context.MODE_PRIVATE);
-        long breakTime = HandlerTime.getInstance().getTime(getShareData.getLong(BREAK_ID, DEFAULT_TIME_BREAK));
-        Log.d(TAG, "getBreakTime: " + breakTime + " ms (" + (breakTime / 60000) + " min)");
+        long breakTime = sharedPreferences.getLong(BREAK_TIME_KEY, 5 * 60 * 1000L);
+        Log.d(TAG, "getBreakTime: " + breakTime + " ms");
         return breakTime;
     }
 
-    public void setBreakTime(long time) {
-        Log.d(TAG, "setBreakTime: " + time);
-        SharedPreferences.Editor editor = getEditor();
-        editor.putLong(BREAK_ID, time);
+    // Long Break Time
+    public void setLongBreakTime(long longBreakTimeMs) {
+        Log.d(TAG, "setLongBreakTime: " + longBreakTimeMs + " ms");
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong(LONG_BREAK_TIME_KEY, longBreakTimeMs);
         editor.apply();
 
-        // Notify all listeners for real-time updates
-        for (OnBreakTimeChangeListener listener : breakTimeListeners) {
-            if (listener != null) {
-                try {
-                    listener.onBreakTimeChanged(HandlerTime.getInstance().getTime(time));
-                } catch (Exception e) {
-                    Log.e(TAG, "Error notifying break time listener", e);
-                }
-            } else {
-                Log.w(TAG, "Found null listener in breakTimeListeners");
-            }
+        // Notify listeners
+        for (OnTimeChangeListener listener : timeChangeListeners) {
+            listener.onLongBreakTimeChanged(longBreakTimeMs);
         }
     }
 
     public long getLongBreakTime() {
-        SharedPreferences getShareData = activity.getPreferences(Context.MODE_PRIVATE);
-        Log.d(TAG, "getLongBreakTime: " + HandlerTime.getInstance().getTime(getShareData.getLong(LONG_BREAK_ID, DEFAULT_TIME_LONG_BREAK)));
-        return HandlerTime.getInstance().getTime(getShareData.getLong(LONG_BREAK_ID, DEFAULT_TIME_LONG_BREAK));
+        long longBreakTime = sharedPreferences.getLong(LONG_BREAK_TIME_KEY, 15 * 60 * 1000L);
+        Log.d(TAG, "getLongBreakTime: " + longBreakTime + " ms");
+        return longBreakTime;
     }
 
-    public void setLongBreakTime(long time) {
-        Log.d(TAG, "setLongBreakTime: " + time);
-        SharedPreferences.Editor editor = getEditor();
-        editor.putLong(LONG_BREAK_ID, time);
+    // Sessions before long break
+    public void setSessionsBeforeLongBreak(int sessions) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(SESSIONS_BEFORE_LONG_BREAK_KEY, sessions);
+        editor.apply();
+    }
+
+    public int getSessionsBeforeLongBreak() {
+        return sharedPreferences.getInt(SESSIONS_BEFORE_LONG_BREAK_KEY, 4);
+    }
+
+    // Daily goal
+    public void setDailyGoal(int goal) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(DAILY_GOAL_KEY, goal);
         editor.apply();
 
-        // Notify all listeners for real-time updates
-        for (OnLongBreakTimeChangeListener listener : longBreakTimeListeners) {
-            if (listener != null) {
-                try {
-                    listener.onLongBreakTimeChanged(HandlerTime.getInstance().getTime(time));
-                } catch (Exception e) {
-                    Log.e(TAG, "Error notifying long break time listener", e);
-                }
-            } else {
-                Log.w(TAG, "Found null listener in longBreakTimeListeners");
-            }
+        // Notify daily goal change listeners
+        for (OnDailyGoalChangeListener listener : dailyGoalChangeListeners) {
+            listener.onDailyGoalChanged(goal);
         }
     }
 
-    public long getWorksBeforeLongBreakTime() {
-        SharedPreferences getShareData = activity.getPreferences(Context.MODE_PRIVATE);
-        Log.d(TAG, "getWorksBeforeLongBreakTime: " + HandlerTime.getInstance().getTime(getShareData.getLong(WORKS_BEFORE_LONG_BREAK_TIME_ID, DEFAULT_TIME_WORKS_BEFORE_LONG_BREAK)));
-        return HandlerTime.getInstance().getTime(getShareData.getLong(WORKS_BEFORE_LONG_BREAK_TIME_ID, DEFAULT_TIME_WORKS_BEFORE_LONG_BREAK));
-    }
-
-    public void setWorksBeforeLongBreak(int count) {
-        Log.d(TAG, "setWorksBeforeLongBreak: " + count);
-        SharedPreferences.Editor editor = getEditor();
-        editor.putLong(WORKS_BEFORE_LONG_BREAK_TIME_ID, count);
-        editor.apply(); //saving to disk
-
-        // Notify all listeners for real-time updates
-        for (OnWorksBeforeLongBreakChangeListener listener : worksBeforeLongBreakListeners) {
-            if (listener != null) {
-                try {
-                    listener.onWorksBeforeLongBreakChanged(count);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error notifying works before long break listener", e);
-                }
-            } else {
-                Log.w(TAG, "Found null listener in worksBeforeLongBreakListeners");
-            }
-        }
-    }
-
-    public long getDailyGoal() {
-        SharedPreferences getShareData = activity.getPreferences(Context.MODE_PRIVATE);
-        long dailyGoal = getShareData.getLong(DAILY_GOAL_ID, DEFAULT_TIME_DAILY_GOAL);
-        Log.d(TAG, "getDailyGoal: " + dailyGoal + " sessions");
-        return dailyGoal;
-    }
-
-    public void setDailyGoal(int dailyGoal) {
-        Log.d(TAG, "setDailyGoal: " + dailyGoal);
-        SharedPreferences.Editor editor = getEditor();
-        editor.putLong(DAILY_GOAL_ID, (long) dailyGoal);
-        editor.apply();
-
-        // Notify all listeners for real-time updates
-        for (OnDailyGoalChangeListener listener : dailyGoalListeners) {
-            if (listener != null) {
-                try {
-                    listener.onDailyGoalChanged(dailyGoal);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error notifying daily goal listener", e);
-                    e.printStackTrace();
-                }
-            } else {
-                Log.w(TAG, "Found null listener in dailyGoalListeners");
-            }
-        }
+    public int getDailyGoal() {
+        return sharedPreferences.getInt(DAILY_GOAL_KEY, 8);
     }
 }

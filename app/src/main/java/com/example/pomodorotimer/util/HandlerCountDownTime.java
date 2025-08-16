@@ -23,7 +23,8 @@ public class HandlerCountDownTime {
     private static boolean isCountdownRunning = false;
     private OnWorkSessionCompletedListener workSessionCompletedListener;
 
-
+    private static long currentWorkMinutes = 0;
+    private static boolean workCompleted = false;
     private static TimerMode currentMode = TimerMode.WORK;
 
     public enum TimerMode {
@@ -113,7 +114,7 @@ public class HandlerCountDownTime {
             }
 
             try {
-                setBreakColor();
+                setLongBreakColor();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -170,13 +171,12 @@ public class HandlerCountDownTime {
         try {
             long timeInMilliseconds = HandlerSharedPreferences.getInstance().getWorkTime();
             mCvCountdownView.updateShow(timeInMilliseconds);
-            currentMode = TimerMode.WORK; // Set initial mode to work
+            currentMode = TimerMode.WORK;
             Log.d(TAG, "Initial work time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // set click listener
         mCvCountdownView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -222,7 +222,6 @@ public class HandlerCountDownTime {
             }
         });
 
-        // set stop listener
         mCvCountdownView.setOnCountdownEndListener(new CountdownView.OnCountdownEndListener() {
             @Override
             public void onEnd(CountdownView cv) {
@@ -232,43 +231,85 @@ public class HandlerCountDownTime {
 
                 try {
                     if (currentMode == TimerMode.WORK) {
-                        long workTimeInMinutes = HandlerSharedPreferences.getInstance().getWorkTime() / 60000;
-                        HandlerDB.getInstance().saveWorkSession(workTimeInMinutes);
-                        Log.d(TAG, "Work session saved: " + workTimeInMinutes + " minutes");
-
-                        HandlerProgressBar.getInstance().onSessionCompleted();
+                        currentWorkMinutes = HandlerSharedPreferences.getInstance().getWorkTime() / 60000;
+                        workCompleted = true;
+                        Log.d(TAG, "Work completed: " + currentWorkMinutes + " minutes");
 
                         try {
-                            HandlerCountDownTime.getInstance().notifyWorkSessionCompleted();
+                            getInstance().notifyWorkSessionCompleted();
                         } catch (Exception e) {
                             Log.e(TAG, "Error notifying work session completed", e);
                         }
 
                         currentMode = TimerMode.BREAK;
                         long breakTime = HandlerSharedPreferences.getInstance().getBreakTime();
-                        Log.d(TAG, "DEBUG: getBreakTime() returned: " + breakTime + " ms (" + (breakTime / 60000) + " min)");
                         mCvCountdownView.updateShow(breakTime);
+
+                        try {
+                            getInstance().setBreakColor();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error setting break color", e);
+                        }
+
                         Log.d(TAG, "Switched to BREAK mode with time: " + breakTime + " ms");
 
-                        HandlerCountDownTime.getInstance().setBreakColor();
                     } else if (currentMode == TimerMode.BREAK) {
+                        long breakMinutes = HandlerSharedPreferences.getInstance().getBreakTime() / 60000;
+
+                        if (workCompleted && currentWorkMinutes > 0) {
+                            HandlerDB.getInstance().saveCompleteSession(currentWorkMinutes, breakMinutes);
+                            Log.d(TAG, "Complete session saved: Work=" + currentWorkMinutes + "min, Break=" + breakMinutes + "min");
+
+                            try {
+                                HandlerProgressBar.getInstance().onSessionCompleted();
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error updating progress bar", e);
+                            }
+
+                            currentWorkMinutes = 0;
+                            workCompleted = false;
+                        }
+
                         currentMode = TimerMode.WORK;
                         long workTime = HandlerSharedPreferences.getInstance().getWorkTime();
-                        Log.d(TAG, "DEBUG: getWorkTime() returned: " + workTime + " ms (" + (workTime / 60000) + " min)");
                         mCvCountdownView.updateShow(workTime);
-                        Log.d(TAG, "Switched to WORK mode with time: " + workTime + " ms");
 
-                        HandlerCountDownTime.getInstance().setWorkColor();
+                        try {
+                            getInstance().setWorkColor();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error setting work color", e);
+                        }
+
+                        Log.d(TAG, "Switched to WORK mode with time: " + workTime + " ms");
 
                     } else if (currentMode == TimerMode.LONG_BREAK) {
-                        // Switch back to WORK mode after long break
+                        long longBreakMinutes = HandlerSharedPreferences.getInstance().getLongBreakTime() / 60000;
+
+                        if (workCompleted && currentWorkMinutes > 0) {
+                            HandlerDB.getInstance().saveCompleteSession(currentWorkMinutes, longBreakMinutes);
+                            Log.d(TAG, "Complete session with long break saved: Work=" + currentWorkMinutes + "min, LongBreak=" + longBreakMinutes + "min");
+
+                            try {
+                                HandlerProgressBar.getInstance().onSessionCompleted();
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error updating progress bar", e);
+                            }
+
+                            currentWorkMinutes = 0;
+                            workCompleted = false;
+                        }
+
                         currentMode = TimerMode.WORK;
                         long workTime = HandlerSharedPreferences.getInstance().getWorkTime();
-                        Log.d(TAG, "DEBUG: getWorkTime() after long break returned: " + workTime + " ms (" + (workTime / 60000) + " min)");
                         mCvCountdownView.updateShow(workTime);
-                        Log.d(TAG, "Switched to WORK mode with time: " + workTime + " ms");
 
-                        HandlerCountDownTime.getInstance().setWorkColor();
+                        try {
+                            getInstance().setWorkColor();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error setting work color", e);
+                        }
+
+                        Log.d(TAG, "Switched to WORK mode with time: " + workTime + " ms");
                     }
 
                 } catch (Exception e) {
@@ -306,13 +347,21 @@ public class HandlerCountDownTime {
     }
 
     public void setWorkColor() throws Exception {
+        Log.d(TAG, "Setting work color (green)");
         setColor(HandlerColor.getInstance().getColorFromColorString(R.color.firstColor),
                 HandlerColor.getInstance().getColorFromColorString(R.color.thirdColor));
     }
 
     public void setBreakColor() throws Exception {
-        setColor(HandlerColor.getInstance().getColorFromColorString(R.color.thirdColor),
-                HandlerColor.getInstance().getColorFromColorString(R.color.thirdColor));
+        Log.d(TAG, "Setting break color (orange)");
+        setColor(HandlerColor.getInstance().getColorFromColorString(R.color.breakColor),
+                HandlerColor.getInstance().getColorFromColorString(R.color.breakColorDark));
+    }
+
+    public void setLongBreakColor() throws Exception {
+        Log.d(TAG, "Setting long break color (purple)");
+        setColor(HandlerColor.getInstance().getColorFromColorString(R.color.longBreakColor),
+                HandlerColor.getInstance().getColorFromColorString(R.color.longBreakColorDark));
     }
 
     public void goOnPause() throws Exception {

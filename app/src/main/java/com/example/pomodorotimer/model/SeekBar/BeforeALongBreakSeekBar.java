@@ -24,10 +24,12 @@ public class BeforeALongBreakSeekBar implements SeekBar.OnSeekBarChangeListener 
     public void onStopTrackingTouch(SeekBar seekBar) {
         Log.d(TAG, "onStopTrackingTouch: " + (seekBar.getProgress() + 1));
 
-        int worksBeforeLongBreak = seekBar.getProgress() + 1;
+        int sessionsBeforeLongBreak = seekBar.getProgress() + 1;
         try {
-            HandlerSharedPreferences.getInstance().setWorksBeforeLongBreak(worksBeforeLongBreak);
+            HandlerSharedPreferences.getInstance().setSessionsBeforeLongBreak(sessionsBeforeLongBreak);
+            Log.d(TAG, "Successfully saved sessions before long break: " + sessionsBeforeLongBreak);
         } catch (Exception e) {
+            Log.e(TAG, "Error saving sessions before long break", e);
             e.printStackTrace();
         }
     }

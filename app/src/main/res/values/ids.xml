@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="work_time" type="id" />
+    <item name="break_time" type="id" />
+    <item name="long_break_time" type="id" />
+    <item name="works_before_a_long_break" type="id" />
+    <item name="goal" type="id" />
+</resources>

@@ -1,95 +1,387 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingLeft="16dp"
-    android:paddingTop="15dp"
-    android:paddingRight="16dp">
+    android:background="@android:color/white">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:text="@string/work_time"
-        android:textColor="@color/secondColor" />
-
-    <SeekBar
-        android:id="@+id/work_time"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:max="59"
-        android:progress="24"
-        android:progressTint="@color/firstColor"
-        android:thumbTint="@color/thirdColor" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="@string/break_time"
-        android:textColor="@color/secondColor" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Timer Settings"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:gravity="center"
+            android:layout_marginBottom="32dp" />
 
-    <SeekBar
-        android:id="@+id/break_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:max="9"
-        android:progress="4"
-        android:progressTint="@color/firstColor"
-        android:thumbTint="@color/thirdColor" />
+        <!-- Work Duration Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/settings_card_background"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="@string/long_break_time"
-        android:textColor="@color/secondColor" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Work Duration"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/firstColor"
+                android:layout_marginBottom="8dp" />
 
-    <SeekBar
-        android:id="@+id/long_break_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:max="29"
-        android:progress="14"
-        android:progressTint="@color/firstColor"
-        android:thumbTint="@color/thirdColor" />
+            <TextView
+                android:id="@+id/tvWorkDurationValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="25 minutes"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="@string/works_before_a_long_break"
-        android:textColor="@color/secondColor" />
+            <SeekBar
+                android:id="@+id/seekBarWorkDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="1"
+                android:max="60"
+                android:progress="25"
+                android:progressTint="@color/firstColor"
+                android:thumbTint="@color/firstColor" />
 
-    <SeekBar
-        android:id="@+id/works_before_a_long_break"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:max="6"
-        android:progress="2"
-        android:progressTint="@color/firstColor"
-        android:thumbTint="@color/thirdColor" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="@string/daily_goal"
-        android:textColor="@color/secondColor" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="1 min"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray" />
 
-    <SeekBar
-        android:id="@+id/goal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:max="14"
-        android:progress="6"
-        android:progressTint="@color/firstColor"
-        android:thumbTint="@color/thirdColor" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="60 min"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray"
+                    android:gravity="end" />
 
-</LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Short Break Duration Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/settings_card_background"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Short Break Duration"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/firstColor"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvShortBreakValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="5 minutes"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarShortBreak"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="1"
+                android:max="30"
+                android:progress="5"
+                android:progressTint="@color/firstColor"
+                android:thumbTint="@color/firstColor" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="1 min"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="30 min"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray"
+                    android:gravity="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Long Break Duration Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/settings_card_background"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Long Break Duration"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/firstColor"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvLongBreakValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="15 minutes"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarLongBreak"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="5"
+                android:max="60"
+                android:progress="15"
+                android:progressTint="@color/firstColor"
+                android:thumbTint="@color/firstColor" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="5 min"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="60 min"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray"
+                    android:gravity="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Sessions Before Long Break Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/settings_card_background"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sessions Before Long Break"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/firstColor"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvSessionsValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="4 sessions"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarSessions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="2"
+                android:max="10"
+                android:progress="4"
+                android:progressTint="@color/firstColor"
+                android:thumbTint="@color/firstColor" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="2 sessions"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="10 sessions"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray"
+                    android:gravity="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Daily Goal Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/settings_card_background"
+            android:padding="20dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Daily Goal"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/firstColor"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvDailyGoalValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="8 sessions"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarDailyGoal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="1"
+                android:max="20"
+                android:progress="8"
+                android:progressTint="@color/firstColor"
+                android:thumbTint="@color/firstColor" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="1 session"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="20 sessions"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/darker_gray"
+                    android:gravity="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnSaveSettings"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Save Settings"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:backgroundTint="@color/firstColor" />
+
+            <Button
+                android:id="@+id/btnResetSettings"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Reset Default"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:backgroundTint="@color/lighter_gray" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

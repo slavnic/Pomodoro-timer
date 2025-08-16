@@ -10,6 +10,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -19,14 +20,28 @@ public class HandlerDB extends SQLiteOpenHelper {
 
     private static final String TAG = "HandlerDB";
     private static final String DATABASE_NAME = "work_timer.db";
-    private static final int DATABASE_VERSION = 2; // Increment version to trigger migration
+    private static final int DATABASE_VERSION = 4; // Increment version to trigger migration
 
-    // Table name and columns
+    // Work sessions table
     private static final String TABLE_WORK_SESSIONS = "work_sessions";
     private static final String KEY_ID = "id";
     private static final String KEY_DATE = "date";
     private static final String KEY_WORK_TIME_MINUTES = "work_time_minutes";
-    private static final String KEY_SESSION_COUNT = "session_count"; // Add session count column
+    private static final String KEY_SESSION_COUNT = "session_count";
+    private static final String KEY_BREAK_TIME_MINUTES = "break_time_minutes";
+
+    // Break sessions table
+    private static final String TABLE_BREAK_SESSIONS = "break_sessions";
+    private static final String KEY_BREAK_ID = "id";
+    private static final String KEY_BREAK_DATE = "date";
+    private static final String KEY_BREAK_TIME_MINUTES_SEPARATE = "break_time_minutes";
+
+    // Long break sessions table
+    private static final String TABLE_LONG_BREAK_SESSIONS = "long_break_sessions";
+    private static final String KEY_LONG_BREAK_ID = "id";
+    private static final String KEY_LONG_BREAK_DATE = "date";
+    private static final String KEY_LONG_BREAK_TIME_MINUTES = "long_break_time_minutes";
+
 
     private static HandlerDB instance;
     private static Context context;
@@ -58,69 +73,95 @@ public class HandlerDB extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        // Create work sessions table
         String CREATE_WORK_SESSIONS_TABLE = "CREATE TABLE " + TABLE_WORK_SESSIONS + "("
                 + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + KEY_DATE + " TEXT NOT NULL,"
                 + KEY_WORK_TIME_MINUTES + " INTEGER NOT NULL,"
-                + KEY_SESSION_COUNT + " INTEGER DEFAULT 1" // Default session count to 1
+                + KEY_SESSION_COUNT + " INTEGER DEFAULT 1,"
+                + KEY_BREAK_TIME_MINUTES + " INTEGER DEFAULT 0"
                 + ")";
+
+        // Create break sessions table
+        String CREATE_BREAK_SESSIONS_TABLE = "CREATE TABLE " + TABLE_BREAK_SESSIONS + "("
+                + KEY_BREAK_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_BREAK_TIME_MINUTES_SEPARATE + " INTEGER NOT NULL,"
+                + KEY_BREAK_DATE + " TEXT NOT NULL"
+                + ")";
+
+        // Create long break sessions table
+        String CREATE_LONG_BREAK_SESSIONS_TABLE = "CREATE TABLE " + TABLE_LONG_BREAK_SESSIONS + "("
+                + KEY_LONG_BREAK_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_LONG_BREAK_TIME_MINUTES + " INTEGER NOT NULL,"
+                + KEY_LONG_BREAK_DATE + " TEXT NOT NULL"
+                + ")";
+
         db.execSQL(CREATE_WORK_SESSIONS_TABLE);
-        Log.d(TAG, "Database table created");
+        db.execSQL(CREATE_BREAK_SESSIONS_TABLE);
+        db.execSQL(CREATE_LONG_BREAK_SESSIONS_TABLE);
+        Log.d(TAG, "All database tables created");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) {
-            // Add session_count column to existing table
             try {
                 db.execSQL("ALTER TABLE " + TABLE_WORK_SESSIONS + " ADD COLUMN " + KEY_SESSION_COUNT + " INTEGER DEFAULT 1");
                 Log.d(TAG, "Added session_count column to existing table");
             } catch (Exception e) {
                 Log.e(TAG, "Error adding session_count column: " + e.getMessage());
-                // If ALTER fails, recreate table (this will lose data but ensures functionality)
-                db.execSQL("DROP TABLE IF EXISTS " + TABLE_WORK_SESSIONS);
-                onCreate(db);
+            }
+        }
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_WORK_SESSIONS + " ADD COLUMN " + KEY_BREAK_TIME_MINUTES + " INTEGER DEFAULT 0");
+                Log.d(TAG, "Added break_time_minutes column to existing table");
+            } catch (Exception e) {
+                Log.e(TAG, "Error adding break_time_minutes column: " + e.getMessage());
+            }
+        }
+        if (oldVersion < 4) {
+            try {
+                String CREATE_BREAK_SESSIONS_TABLE = "CREATE TABLE " + TABLE_BREAK_SESSIONS + "("
+                        + KEY_BREAK_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        + KEY_BREAK_TIME_MINUTES_SEPARATE + " INTEGER NOT NULL,"
+                        + KEY_BREAK_DATE + " TEXT NOT NULL"
+                        + ")";
+
+                String CREATE_LONG_BREAK_SESSIONS_TABLE = "CREATE TABLE " + TABLE_LONG_BREAK_SESSIONS + "("
+                        + KEY_LONG_BREAK_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        + KEY_LONG_BREAK_TIME_MINUTES + " INTEGER NOT NULL,"
+                        + KEY_LONG_BREAK_DATE + " TEXT NOT NULL"
+                        + ")";
+
+                db.execSQL(CREATE_BREAK_SESSIONS_TABLE);
+                db.execSQL(CREATE_LONG_BREAK_SESSIONS_TABLE);
+                Log.d(TAG, "Created break and long break tables");
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating break tables: " + e.getMessage());
             }
         }
     }
 
-    public void saveWorkSession(long workTimeInMinutes) {
-        String currentDate = getCurrentDate();
-        SQLiteDatabase db = this.getWritableDatabase();
-
+    public void saveWorkSession(long workMinutes) throws Exception {
         try {
+            SQLiteDatabase database = this.getWritableDatabase();
             ContentValues values = new ContentValues();
-            values.put(KEY_DATE, currentDate);
-            values.put(KEY_WORK_TIME_MINUTES, workTimeInMinutes);
+            values.put(KEY_DATE, getCurrentDate());
+            values.put(KEY_WORK_TIME_MINUTES, workMinutes);
+            values.put(KEY_SESSION_COUNT, 1); // Jedna work sesija
+            values.put(KEY_BREAK_TIME_MINUTES, 0); // NIKAD ne čuvaj break time ovde
 
-            // Check if record exists for today
-            Cursor cursor = db.query(TABLE_WORK_SESSIONS,
-                    new String[]{KEY_WORK_TIME_MINUTES, KEY_SESSION_COUNT},
-                    KEY_DATE + " = ?",
-                    new String[]{currentDate},
-                    null, null, null);
-
-            if (cursor.moveToFirst()) {
-                // Update existing record - add to today's total
-                long existingTime = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_WORK_TIME_MINUTES));
-                int sessionCount = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_SESSION_COUNT));
-                values.put(KEY_WORK_TIME_MINUTES, existingTime + workTimeInMinutes);
-                values.put(KEY_SESSION_COUNT, sessionCount + 1); // Increment session count
-                int rowsUpdated = db.update(TABLE_WORK_SESSIONS, values, KEY_DATE + " = ?", new String[]{currentDate});
-                Log.d(TAG, "Updated work session: " + workTimeInMinutes + " minutes added to " + currentDate + " (rows updated: " + rowsUpdated + ")");
+            long result = database.insert(TABLE_WORK_SESSIONS, null, values);
+            if (result != -1) {
+                Log.d(TAG, "Work session saved ONLY: " + workMinutes + " minutes");
             } else {
-                // Insert new record for today
-                values.put(KEY_SESSION_COUNT, 1); // New session, count is 1
-                long result = db.insert(TABLE_WORK_SESSIONS, null, values);
-                Log.d(TAG, "Saved new work session: " + workTimeInMinutes + " minutes for " + currentDate + " (row id: " + result + ")");
+                Log.e(TAG, "Failed to save work session");
             }
-
-            cursor.close();
+            database.close();
         } catch (Exception e) {
-            Log.e(TAG, "Error saving work session: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            db.close();
+            Log.e(TAG, "Error saving work session", e);
+            throw e;
         }
     }
 
@@ -157,6 +198,8 @@ public class HandlerDB extends SQLiteOpenHelper {
         return dailyData;
     }
 
+
+
     public Map<Integer, Float> getMonthlyWorkTime() {
         Map<Integer, Float> monthlyData = new HashMap<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -189,6 +232,176 @@ public class HandlerDB extends SQLiteOpenHelper {
         }
 
         return monthlyData;
+    }
+
+    public int getTotalBreakMinutesToday() {
+        int totalBreakMinutes = 0;
+        String currentDate = getCurrentDate();
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            Cursor cursor = db.rawQuery(query, new String[]{currentDate});
+
+            if (cursor.moveToFirst()) {
+                totalBreakMinutes = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+
+            Log.d(TAG, "Total break minutes today: " + totalBreakMinutes);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting total break minutes", e);
+        }
+
+        return totalBreakMinutes;
+    }
+
+    public int getTotalSessionsToday() {
+        int totalSessions = 0;
+        String currentDate = getCurrentDate();
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            String query = "SELECT SUM(" + KEY_SESSION_COUNT + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            Cursor cursor = db.rawQuery(query, new String[]{currentDate});
+
+            if (cursor.moveToFirst()) {
+                totalSessions = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting total sessions", e);
+        }
+
+        return totalSessions;
+    }
+
+    public Map<String, Integer> getMonthlyWorkStatistics(int year, int month) {
+        Map<String, Integer> stats = new HashMap<>();
+        int totalWorkMinutes = 0;
+        int totalSessions = 0;
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+
+            // Format year-month for query
+            String yearMonth = String.format("%04d-%02d", year, month + 1); // month+1 jer Calendar.MONTH počinje od 0
+
+            String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + "), SUM(" + KEY_SESSION_COUNT + ") FROM " +
+                    TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " LIKE ?";
+
+            Cursor cursor = db.rawQuery(query, new String[]{yearMonth + "%"});
+
+            if (cursor.moveToFirst()) {
+                totalWorkMinutes = cursor.getInt(0);
+                totalSessions = cursor.getInt(1);
+            }
+
+            cursor.close();
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting monthly work statistics", e);
+        }
+
+        stats.put("workTime", totalWorkMinutes);
+        stats.put("sessions", totalSessions);
+        return stats;
+    }
+
+    public int getMonthlyBreakMinutes(int year, int month) {
+        int totalBreakMinutes = 0;
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+
+            // Format year-month for query
+            String yearMonth = String.format("%04d-%02d", year, month + 1);
+
+            // Čitaj break minute iz glavne tabele
+            String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " +
+                    TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " LIKE ?";
+            Cursor cursor = db.rawQuery(query, new String[]{yearMonth + "%"});
+
+            if (cursor.moveToFirst()) {
+                totalBreakMinutes = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+
+            Log.d(TAG, "Monthly break minutes for " + yearMonth + ": " + totalBreakMinutes);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting monthly break minutes", e);
+        }
+
+        return totalBreakMinutes;
+    }
+
+    public int getTotalWorkMinutesForDate(Date date) {
+        int totalWorkMinutes = 0;
+        String dateString = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(date);
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            Cursor cursor = db.rawQuery(query, new String[]{dateString});
+
+            if (cursor.moveToFirst()) {
+                totalWorkMinutes = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting work minutes for date", e);
+        }
+
+        return totalWorkMinutes;
+    }
+
+    public int getTotalBreakMinutesForDate(Date date) {
+        int totalBreakMinutes = 0;
+        String dateString = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(date);
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            // Čitaj break minute iz glavne tabele gde se čuvaju kompletne sesije
+            String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            Cursor cursor = db.rawQuery(query, new String[]{dateString});
+
+            if (cursor.moveToFirst()) {
+                totalBreakMinutes = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+
+            Log.d(TAG, "Total break minutes for date " + dateString + ": " + totalBreakMinutes);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting break minutes for date", e);
+        }
+
+        return totalBreakMinutes;
+    }
+
+    public int getTotalWorkMinutesToday() {
+        int totalWorkMinutes = 0;
+        String currentDate = getCurrentDate();
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            Cursor cursor = db.rawQuery(query, new String[]{currentDate});
+
+            if (cursor.moveToFirst()) {
+                totalWorkMinutes = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting total work minutes", e);
+        }
+
+        return totalWorkMinutes;
     }
 
     public float getTodayWorkTime() {
@@ -261,6 +474,186 @@ public class HandlerDB extends SQLiteOpenHelper {
             e.printStackTrace();
         } finally {
             db.close();
+        }
+    }
+
+    public int getTotalMinutesForDate(Date date) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String dateString = sdf.format(date);
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS +
+                " WHERE " + KEY_DATE + " = ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{dateString});
+
+        int totalMinutes = 0;
+        if (cursor.moveToFirst()) {
+            totalMinutes = cursor.getInt(0);
+        }
+
+        cursor.close();
+        return totalMinutes;
+    }
+
+    public int getTotalBreakTimeForDate(Date date) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String dateString = sdf.format(date);
+
+        SQLiteDatabase db = getReadableDatabase();
+        String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS +
+                " WHERE " + KEY_DATE + " = ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{dateString});
+        int totalBreakTime = 0;
+        if (cursor.moveToFirst()) {
+            totalBreakTime = cursor.getInt(0);
+        }
+        cursor.close();
+        return totalBreakTime;
+    }
+
+    public Map<String, Integer> getMonthlyStatistics(int year, int month) throws Exception {
+        SQLiteDatabase db = getReadableDatabase();
+
+        // Format month to match your date format (month is 0-based in Calendar)
+        String monthStr = String.format("%04d-%02d", year, month + 1);
+
+        String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + "), SUM(" + KEY_BREAK_TIME_MINUTES + "), SUM(" + KEY_SESSION_COUNT + ") " +
+                "FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " LIKE ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{monthStr + "%"});
+
+        Map<String, Integer> stats = new HashMap<>();
+        if (cursor.moveToFirst()) {
+            stats.put("workTime", cursor.getInt(0));
+            stats.put("breakTime", cursor.getInt(1));
+            stats.put("sessions", cursor.getInt(2));
+        } else {
+            stats.put("workTime", 0);
+            stats.put("breakTime", 0);
+            stats.put("sessions", 0);
+        }
+
+        cursor.close();
+        return stats;
+    }
+
+    // Method to save break time (call this when break session ends)
+    public void saveBreakTime(Date date, int breakMinutes) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String dateString = sdf.format(date);
+
+        SQLiteDatabase db = getWritableDatabase();
+
+        // Check if record exists for this date
+        Cursor cursor = db.query(TABLE_WORK_SESSIONS, null, KEY_DATE + "=?",
+                new String[]{dateString}, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            // Update existing record - use getColumnIndexOrThrow instead
+            int breakTimeColumnIndex = cursor.getColumnIndex(KEY_BREAK_TIME_MINUTES);
+            int currentBreakTime = 0;
+            if (breakTimeColumnIndex != -1) {
+                currentBreakTime = cursor.getInt(breakTimeColumnIndex);
+            }
+            ContentValues values = new ContentValues();
+            values.put(KEY_BREAK_TIME_MINUTES, currentBreakTime + breakMinutes);
+            db.update(TABLE_WORK_SESSIONS, values, KEY_DATE + "=?", new String[]{dateString});
+        } else {
+            // Create new record
+            ContentValues values = new ContentValues();
+            values.put(KEY_DATE, dateString);
+            values.put(KEY_WORK_TIME_MINUTES, 0);
+            values.put(KEY_BREAK_TIME_MINUTES, breakMinutes);
+            values.put(KEY_SESSION_COUNT, 0);
+            db.insert(TABLE_WORK_SESSIONS, null, values);
+        }
+
+        cursor.close();
+    }
+
+    public int getSessionCountForDate(Date date) {
+        int sessionCount = 0;
+        String dateString = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(date);
+
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            String query = "SELECT SUM(" + KEY_SESSION_COUNT + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            Cursor cursor = db.rawQuery(query, new String[]{dateString});
+
+            if (cursor.moveToFirst()) {
+                sessionCount = cursor.getInt(0);
+            }
+            cursor.close();
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting session count for date", e);
+        }
+
+        return sessionCount;
+    }
+
+    public void saveCompleteSession(long workMinutes, long breakMinutes) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(KEY_DATE, getCurrentDate());
+            values.put(KEY_WORK_TIME_MINUTES, workMinutes);
+            values.put(KEY_BREAK_TIME_MINUTES, breakMinutes);
+            values.put(KEY_SESSION_COUNT, 1); // Jedna kompletna sesija
+
+            long result = db.insert(TABLE_WORK_SESSIONS, null, values);
+            if (result != -1) {
+                Log.d(TAG, "Complete session saved: Work=" + workMinutes + "min, Break=" + breakMinutes + "min");
+            } else {
+                Log.e(TAG, "Failed to save complete session");
+            }
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving complete session", e);
+            e.printStackTrace();
+        }
+    }
+
+    public void saveBreakSession(long breakTimeInMinutes) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(KEY_BREAK_TIME_MINUTES_SEPARATE, breakTimeInMinutes);
+            values.put(KEY_BREAK_DATE, getCurrentDate());
+
+            long result = db.insert(TABLE_BREAK_SESSIONS, null, values);
+            if (result != -1) {
+                Log.d(TAG, "Break session saved successfully: " + breakTimeInMinutes + " minutes");
+            } else {
+                Log.e(TAG, "Failed to save break session");
+            }
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving break session", e);
+            e.printStackTrace();
+        }
+    }
+
+    public void saveLongBreakSession(long longBreakTimeInMinutes) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(KEY_LONG_BREAK_TIME_MINUTES, longBreakTimeInMinutes);
+            values.put(KEY_LONG_BREAK_DATE, getCurrentDate());
+
+            long result = db.insert(TABLE_LONG_BREAK_SESSIONS, null, values);
+            if (result != -1) {
+                Log.d(TAG, "Long break session saved successfully: " + longBreakTimeInMinutes + " minutes");
+            } else {
+                Log.e(TAG, "Failed to save long break session");
+            }
+            db.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving long break session", e);
+            e.printStackTrace();
         }
     }
 

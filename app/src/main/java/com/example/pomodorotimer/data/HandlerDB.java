@@ -263,7 +263,8 @@ public class HandlerDB extends SQLiteOpenHelper {
 
         try {
             SQLiteDatabase db = this.getReadableDatabase();
-            String query = "SELECT SUM(" + KEY_SESSION_COUNT + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
+            // Count all rows for today (each row represents one completed session)
+            String query = "SELECT COUNT(*) FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
             Cursor cursor = db.rawQuery(query, new String[]{currentDate});
 
             if (cursor.moveToFirst()) {
@@ -271,6 +272,8 @@ public class HandlerDB extends SQLiteOpenHelper {
             }
             cursor.close();
             db.close();
+
+            Log.d(TAG, "Today's completed sessions: " + totalSessions);
         } catch (Exception e) {
             Log.e(TAG, "Error getting total sessions", e);
         }

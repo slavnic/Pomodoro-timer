@@ -47,14 +47,13 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         /*
          *  SET DAILY GOAL - Always set to 100% scale
          * */
-        long dailyGoalLong = HandlerSharedPreferences.getInstance().getDailyGoal();
-        int dailyGoal = (int) dailyGoalLong;
+        int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
         Log.d(TAG, "init - dailyGoal: " + dailyGoal + " sessions");
 
         numberProgressBar.setMax(100);
 
         try {
-            int todaySessionCount = HandlerDB.getInstance(context).getTodaySessionCount();
+            int todaySessionCount = HandlerDB.getInstance().getTotalSessionsToday();
             int progressPercentage = 0;
 
             if (dailyGoal > 0) {
@@ -91,7 +90,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
             }
         });
 
-        // Register for daily goal changes AFTER instance is created
         try {
             if (instance != null) {
                 HandlerSharedPreferences.getInstance().addDailyGoalChangeListener(instance);
@@ -115,7 +113,7 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
 
     public void updateDailyGoal(int newDailyGoal) {
         try {
-            int currentSessions = HandlerDB.getInstance(context).getTodaySessionCount();
+            int currentSessions = HandlerDB.getInstance().getTotalSessionsToday();
             int progressPercentage = 0;
 
             if (newDailyGoal > 0) {
@@ -135,7 +133,7 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
     private void updateProgressBasedOnSessions() {
         try {
             int dailyGoal = (int) HandlerSharedPreferences.getInstance().getDailyGoal();
-            int todaySessionCount = HandlerDB.getInstance(context).getTodaySessionCount();
+            int todaySessionCount = HandlerDB.getInstance().getTotalSessionsToday();
 
             int progressPercentage = 0;
             if (dailyGoal > 0) {
@@ -187,7 +185,7 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         try {
             int dailyGoal = (int) HandlerSharedPreferences.getInstance().getDailyGoal();
             if (dailyGoal > 0) {
-                int currentSessions = HandlerDB.getInstance(context).getTodaySessionCount();
+                int currentSessions = HandlerDB.getInstance().getTotalSessionsToday();
 
                 int progressPercentage = Math.min(100, (currentSessions * 100) / dailyGoal);
                 Log.d(TAG, "incrementTodaysProgress - setting progress to: " + progressPercentage + "% (" + currentSessions + "/" + dailyGoal + " sessions)");
@@ -254,14 +252,12 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
                     updateDailyGoal(newDailyGoal);
                 });
             } else {
-                // Fallback for non-activity contexts
                 android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                 mainHandler.post(() -> {
                     updateDailyGoal(newDailyGoal);
                 });
             }
         } else {
-            // Direct update if context is not available
             updateDailyGoal(newDailyGoal);
         }
     }

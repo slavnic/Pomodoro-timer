@@ -16,7 +16,6 @@ import com.example.pomodorotimer.util.HandlerProgressBar;
 import com.example.pomodorotimer.util.HandlerSharedPreferences;
 
 public class HomeFragment extends Fragment implements
-        HandlerCountDownTime.OnWorkSessionCompletedListener,
         HandlerSharedPreferences.OnTimeChangeListener {
 
     private static final String TAG = "HomeFragment";
@@ -73,13 +72,11 @@ public class HomeFragment extends Fragment implements
             // Get HandlerCountDownTime instance
             handlerCountDownTime = HandlerCountDownTime.getInstance();
             if (handlerCountDownTime != null) {
-                handlerCountDownTime.setOnWorkSessionCompletedListener(this);
-                Log.d(TAG, "Registered for work session completion");
+                Log.d(TAG, "HandlerCountDownTime instance obtained");
             } else {
                 Log.e(TAG, "HandlerCountDownTime instance is null");
             }
 
-            // Register for time change notifications
             handlerSharedPreferences = HandlerSharedPreferences.getInstance();
             if (handlerSharedPreferences != null) {
                 handlerSharedPreferences.addOnTimeChangeListener(this);
@@ -94,24 +91,6 @@ public class HomeFragment extends Fragment implements
         }
     }
 
-    @Override
-    public void onWorkSessionCompleted() {
-        Log.d(TAG, "Work session completed, updating daily progress");
-        try {
-            HandlerProgressBar progressBar = HandlerProgressBar.getInstance();
-            if (progressBar != null) {
-                progressBar.incrementTodaysProgress();
-                Log.d(TAG, "Daily progress incremented");
-            } else {
-                Log.e(TAG, "HandlerProgressBar instance is null");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating daily progress after work session completion", e);
-            e.printStackTrace();
-        }
-    }
-
-    // Implementation of OnTimeChangeListener
     @Override
     public void onWorkTimeChanged(long workTimeMs) {
         Log.d(TAG, "Work time changed to: " + workTimeMs + " ms");
@@ -134,22 +113,54 @@ public class HomeFragment extends Fragment implements
     @Override
     public void onBreakTimeChanged(long breakTimeMs) {
         Log.d(TAG, "Break time changed to: " + breakTimeMs + " ms");
-        // Handle break time change if needed
+        try {
+            if (handlerCountDownTime != null && handlerCountDownTime.isInBreakMode()) {
+                Log.d(TAG, "Currently in break mode, updating timer with new break time");
+                handlerCountDownTime.restartWithNewBreakTime(breakTimeMs);
+            } else {
+                Log.d(TAG, "Not in break mode, changes will apply when break starts");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling break time change", e);
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onLongBreakTimeChanged(long longBreakTimeMs) {
         Log.d(TAG, "Long break time changed to: " + longBreakTimeMs + " ms");
-        // Handle long break time change if needed
+        try {
+            if (handlerCountDownTime != null) {
+                Log.d(TAG, "HandlerCountDownTime is not null");
+                Log.d(TAG, "Current timer mode: " + handlerCountDownTime.getCurrentMode());
+                Log.d(TAG, "Is in long break mode: " + handlerCountDownTime.isInLongBreakMode());
+                Log.d(TAG, "Is timer running: " + handlerCountDownTime.isRunning());
+
+                if (handlerCountDownTime.isInLongBreakMode()) {
+                    long oldLongBreakTime = longBreakTimeMs;
+                    try {
+                        long remaining = handlerCountDownTime.getRemainingTime();
+                        oldLongBreakTime = remaining;
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error getting remaining time for long break", e);
+                    }
+                    handlerCountDownTime.restartWithNewLongBreakTime(longBreakTimeMs, oldLongBreakTime);
+                } else {
+                    Log.d(TAG, "Not in long break mode, will not update timer");
+                }
+            } else {
+                Log.e(TAG, "HandlerCountDownTime is null!");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling long break time change", e);
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onDestroyView() {
         try {
             // Unregister listeners
-            if (handlerCountDownTime != null) {
-                handlerCountDownTime.setOnWorkSessionCompletedListener(null);
-            }
 
             if (handlerSharedPreferences != null) {
                 handlerSharedPreferences.removeOnTimeChangeListener(this);

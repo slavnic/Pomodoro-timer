@@ -84,7 +84,6 @@ public class HandlerSharedPreferences {
         editor.putLong(WORK_TIME_KEY, workTimeMs);
         editor.apply();
 
-        // Notify listeners
         for (OnTimeChangeListener listener : timeChangeListeners) {
             listener.onWorkTimeChanged(workTimeMs);
         }
@@ -118,14 +117,17 @@ public class HandlerSharedPreferences {
     // Long Break Time
     public void setLongBreakTime(long longBreakTimeMs) {
         Log.d(TAG, "setLongBreakTime: " + longBreakTimeMs + " ms");
+        Log.d(TAG, "Number of time change listeners: " + timeChangeListeners.size());
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putLong(LONG_BREAK_TIME_KEY, longBreakTimeMs);
         editor.apply();
 
         // Notify listeners
         for (OnTimeChangeListener listener : timeChangeListeners) {
+            Log.d(TAG, "Notifying listener: " + listener.getClass().getSimpleName());
             listener.onLongBreakTimeChanged(longBreakTimeMs);
         }
+        Log.d(TAG, "All listeners notified for long break time change");
     }
 
     public long getLongBreakTime() {

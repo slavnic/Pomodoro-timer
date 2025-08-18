@@ -60,19 +60,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        try {
-            viewPager2.post(() -> {
-                try {
-                    com.example.pomodorotimer.util.HandlerProgressBar.getInstance().initializeTodayProgress();
-                    Log.d(TAG, "Progress bar initialized");
-                } catch (Exception e) {
-                    Log.e(TAG, "Error initializing progress bar", e);
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onResume", e);
-        }
+        Log.d(TAG, "MainActivity resumed");
     }
 
     private void initializeViews() {

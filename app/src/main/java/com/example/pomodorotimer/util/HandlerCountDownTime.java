@@ -92,21 +92,25 @@ public class HandlerCountDownTime {
         }
     }
 
-    public void restartWithNewLongBreakTime(long newLongBreakTime) {
-        if (mCvCountdownView != null) {
-            Log.d(TAG, "Restarting long break timer with new time: " + newLongBreakTime + " ms");
+    public void restartWithNewLongBreakTime(long newLongBreakTime, long oldLongBreakTime) {
+        if (mCvCountdownView != null && currentMode == TimerMode.LONG_BREAK) {
+            Log.d(TAG, "Restarting long break timer with new time: " + newLongBreakTime + " ms (old: " + oldLongBreakTime + " ms)");
 
             boolean wasRunning = isCountdownRunning;
-            currentMode = TimerMode.LONG_BREAK;
+            long oldRemaining = mCvCountdownView.getRemainTime();
+
+            long elapsed = oldLongBreakTime - oldRemaining;
+            long newRemaining = Math.max(newLongBreakTime - elapsed, 0);
 
             mCvCountdownView.stop();
             isCountdownRunning = false;
 
-            mCvCountdownView.updateShow(newLongBreakTime);
+            mCvCountdownView.updateShow(newRemaining);
 
-            if (wasRunning) {
-                mCvCountdownView.start(newLongBreakTime);
+            if (wasRunning && newRemaining > 0) {
+                mCvCountdownView.start(newRemaining);
                 isCountdownRunning = true;
+                itWillBeStartAtNextState = false;
                 Log.d(TAG, "Long break timer restarted with running state");
             } else {
                 itWillBeStartAtNextState = true;
@@ -120,6 +124,8 @@ public class HandlerCountDownTime {
             }
 
             Log.d(TAG, "Long break timer updated successfully");
+        } else {
+            Log.d(TAG, "Not in LONG_BREAK mode, timer not updated");
         }
     }
 
@@ -169,10 +175,23 @@ public class HandlerCountDownTime {
         mCvCountdownView = root.findViewById(R.id.countDown);
 
         try {
-            long timeInMilliseconds = HandlerSharedPreferences.getInstance().getWorkTime();
+            long timeInMilliseconds;
+            // Use the correct time based on the current mode
+            if (currentMode == TimerMode.WORK) {
+                timeInMilliseconds = HandlerSharedPreferences.getInstance().getWorkTime();
+                Log.d(TAG, "Initial work time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
+            } else if (currentMode == TimerMode.BREAK) {
+                timeInMilliseconds = HandlerSharedPreferences.getInstance().getBreakTime();
+                Log.d(TAG, "Initial break time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
+            } else if (currentMode == TimerMode.LONG_BREAK) {
+                timeInMilliseconds = HandlerSharedPreferences.getInstance().getLongBreakTime();
+                Log.d(TAG, "Initial long break time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
+            } else {
+                // fallback to work time
+                timeInMilliseconds = HandlerSharedPreferences.getInstance().getWorkTime();
+                Log.d(TAG, "Fallback: Initial work time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
+            }
             mCvCountdownView.updateShow(timeInMilliseconds);
-            currentMode = TimerMode.WORK;
-            Log.d(TAG, "Initial work time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -235,23 +254,40 @@ public class HandlerCountDownTime {
                         workCompleted = true;
                         Log.d(TAG, "Work completed: " + currentWorkMinutes + " minutes");
 
-                        try {
-                            getInstance().notifyWorkSessionCompleted();
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error notifying work session completed", e);
+                        // Check if it's time for long break
+                        int sessionsBeforeLongBreak = HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak();
+                        int todayCompletedSessions = HandlerDB.getInstance().getTotalSessionsToday();
+
+                        Log.d(TAG, "Today's completed sessions: " + todayCompletedSessions + ", Sessions before long break: " + sessionsBeforeLongBreak);
+
+                        // Check if next session should be long break (current sessions + 1 would be divisible by sessions before long break)
+                        boolean shouldBeLongBreak = ((todayCompletedSessions + 1) % sessionsBeforeLongBreak == 0);
+
+                        if (shouldBeLongBreak) {
+                            currentMode = TimerMode.LONG_BREAK;
+                            long longBreakTime = HandlerSharedPreferences.getInstance().getLongBreakTime();
+                            mCvCountdownView.updateShow(longBreakTime);
+
+                            try {
+                                getInstance().setLongBreakColor();
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error setting long break color", e);
+                            }
+
+                            Log.d(TAG, "Switched to LONG_BREAK mode with time: " + longBreakTime + " ms");
+                        } else {
+                            currentMode = TimerMode.BREAK;
+                            long breakTime = HandlerSharedPreferences.getInstance().getBreakTime();
+                            mCvCountdownView.updateShow(breakTime);
+
+                            try {
+                                getInstance().setBreakColor();
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error setting break color", e);
+                            }
+
+                            Log.d(TAG, "Switched to BREAK mode with time: " + breakTime + " ms");
                         }
-
-                        currentMode = TimerMode.BREAK;
-                        long breakTime = HandlerSharedPreferences.getInstance().getBreakTime();
-                        mCvCountdownView.updateShow(breakTime);
-
-                        try {
-                            getInstance().setBreakColor();
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error setting break color", e);
-                        }
-
-                        Log.d(TAG, "Switched to BREAK mode with time: " + breakTime + " ms");
 
                     } else if (currentMode == TimerMode.BREAK) {
                         long breakMinutes = HandlerSharedPreferences.getInstance().getBreakTime() / 60000;
@@ -262,6 +298,7 @@ public class HandlerCountDownTime {
 
                             try {
                                 HandlerProgressBar.getInstance().onSessionCompleted();
+                                Log.d(TAG, "Full cycle completed - daily progress updated");
                             } catch (Exception e) {
                                 Log.e(TAG, "Error updating progress bar", e);
                             }
@@ -291,6 +328,7 @@ public class HandlerCountDownTime {
 
                             try {
                                 HandlerProgressBar.getInstance().onSessionCompleted();
+                                Log.d(TAG, "Full cycle with long break completed - daily progress updated");
                             } catch (Exception e) {
                                 Log.e(TAG, "Error updating progress bar", e);
                             }

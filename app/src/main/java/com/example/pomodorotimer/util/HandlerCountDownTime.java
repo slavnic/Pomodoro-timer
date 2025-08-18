@@ -1,6 +1,7 @@
 package com.example.pomodorotimer.util;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.util.Log;
 import android.view.View;
 
@@ -22,6 +23,7 @@ public class HandlerCountDownTime {
     private static boolean itWillBeStartAtNextState;
     private static boolean isCountdownRunning = false;
     private OnWorkSessionCompletedListener workSessionCompletedListener;
+    private static Context context; // Added context field
 
     private static long currentWorkMinutes = 0;
     private static boolean workCompleted = false;
@@ -172,6 +174,9 @@ public class HandlerCountDownTime {
     public static void setCountDown(@NotNull View root) {
         itWillBeStartAtNextState = true;
 
+        // Set context from the view
+        context = root.getContext();
+
         mCvCountdownView = root.findViewById(R.id.countDown);
 
         try {
@@ -247,6 +252,22 @@ public class HandlerCountDownTime {
                 Log.d(TAG, "onEnd: Timer finished for mode: " + currentMode);
                 isCountdownRunning = false;
                 itWillBeStartAtNextState = true;
+
+                // Play sound based on current mode before switching
+                try {
+                    if (context != null) {
+                        HandlerSound soundHandler = HandlerSound.getInstance(context);
+                        if (currentMode == TimerMode.WORK) {
+                            soundHandler.playWorkTimeFinishedSound();
+                        } else if (currentMode == TimerMode.BREAK) {
+                            soundHandler.playShortBreakTimeFinishedSound();
+                        } else if (currentMode == TimerMode.LONG_BREAK) {
+                            soundHandler.playLongBreakTimeFinishedSound();
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error playing sound", e);
+                }
 
                 try {
                     if (currentMode == TimerMode.WORK) {

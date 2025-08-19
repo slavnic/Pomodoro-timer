@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,8 +25,10 @@ public class SettingsFragment extends Fragment {
     private SeekBar seekBarWorkDuration, seekBarShortBreak, seekBarLongBreak, seekBarSessions, seekBarDailyGoal;
     private TextView tvWorkDurationValue, tvShortBreakValue, tvLongBreakValue, tvSessionsValue, tvDailyGoalValue;
     private Button btnSaveSettings, btnResetSettings;
+    private Switch switchTimeUnit;
 
     private HandlerSharedPreferences handlerSharedPreferences;
+    private boolean isSecondsMode = false; // false = minutes, true = seconds
 
     // Default values
     private static final int DEFAULT_WORK_DURATION = 25;
@@ -33,6 +36,11 @@ public class SettingsFragment extends Fragment {
     private static final int DEFAULT_LONG_BREAK = 15;
     private static final int DEFAULT_SESSIONS = 4;
     private static final int DEFAULT_DAILY_GOAL = 8;
+
+    // Testing defaults (in seconds)
+    private static final int TEST_WORK_DURATION = 10;
+    private static final int TEST_SHORT_BREAK = 5;
+    private static final int TEST_LONG_BREAK = 15;
 
     @Nullable
     @Override
@@ -48,6 +56,7 @@ public class SettingsFragment extends Fragment {
         initViews(view);
         setupSeekBars();
         setupButtons();
+        setupTimeUnitSwitch();
         loadSettings();
 
         return view;
@@ -68,13 +77,37 @@ public class SettingsFragment extends Fragment {
 
         btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
         btnResetSettings = view.findViewById(R.id.btnResetSettings);
+        switchTimeUnit = view.findViewById(R.id.switchTimeUnit);
+    }
+
+    private void setupTimeUnitSwitch() {
+        switchTimeUnit.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            isSecondsMode = isChecked;
+            updateSeekBarRanges();
+            loadSettings(); // Reload settings with new unit
+        });
+    }
+
+    private void updateSeekBarRanges() {
+        if (isSecondsMode) {
+            // Set ranges for seconds mode (good for testing)
+            seekBarWorkDuration.setMax(60); // 1-60 seconds
+            seekBarShortBreak.setMax(30);   // 1-30 seconds
+            seekBarLongBreak.setMax(60);    // 5-60 seconds
+        } else {
+            // Set ranges for minutes mode (normal use)
+            seekBarWorkDuration.setMax(60); // 1-60 minutes
+            seekBarShortBreak.setMax(30);   // 1-30 minutes
+            seekBarLongBreak.setMax(60);    // 5-60 minutes
+        }
     }
 
     private void setupSeekBars() {
         seekBarWorkDuration.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                tvWorkDurationValue.setText(progress + " minutes");
+                String unit = isSecondsMode ? " seconds" : " minutes";
+                tvWorkDurationValue.setText(progress + unit);
             }
 
             @Override
@@ -87,7 +120,8 @@ public class SettingsFragment extends Fragment {
         seekBarShortBreak.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                tvShortBreakValue.setText(progress + " minutes");
+                String unit = isSecondsMode ? " seconds" : " minutes";
+                tvShortBreakValue.setText(progress + unit);
             }
 
             @Override
@@ -100,7 +134,8 @@ public class SettingsFragment extends Fragment {
         seekBarLongBreak.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                tvLongBreakValue.setText(progress + " minutes");
+                String unit = isSecondsMode ? " seconds" : " minutes";
+                tvLongBreakValue.setText(progress + unit);
             }
 
             @Override
@@ -145,18 +180,27 @@ public class SettingsFragment extends Fragment {
     private void saveSettings() {
         try {
             // Get values from SeekBars
-            int workMinutes = seekBarWorkDuration.getProgress();
-            int breakMinutes = seekBarShortBreak.getProgress();
-            int longBreakMinutes = seekBarLongBreak.getProgress();
+            int workValue = seekBarWorkDuration.getProgress();
+            int breakValue = seekBarShortBreak.getProgress();
+            int longBreakValue = seekBarLongBreak.getProgress();
 
-            System.out.println("DEBUG - Saving work minutes: " + workMinutes);
-            System.out.println("DEBUG - Saving break minutes: " + breakMinutes);
-            System.out.println("DEBUG - Saving long break minutes: " + longBreakMinutes);
+            System.out.println("DEBUG - Saving work value: " + workValue + (isSecondsMode ? " seconds" : " minutes"));
+            System.out.println("DEBUG - Saving break value: " + breakValue + (isSecondsMode ? " seconds" : " minutes"));
+            System.out.println("DEBUG - Saving long break value: " + longBreakValue + (isSecondsMode ? " seconds" : " minutes"));
 
-            // Convert to milliseconds
-            long workTimeMs = workMinutes * 60 * 1000L;
-            long breakTimeMs = breakMinutes * 60 * 1000L;
-            long longBreakTimeMs = longBreakMinutes * 60 * 1000L;
+            // Convert to milliseconds based on current mode
+            long workTimeMs, breakTimeMs, longBreakTimeMs;
+            if (isSecondsMode) {
+                // If in seconds mode, multiply by 1000 to get milliseconds
+                workTimeMs = workValue * 1000L;
+                breakTimeMs = breakValue * 1000L;
+                longBreakTimeMs = longBreakValue * 1000L;
+            } else {
+                // If in minutes mode, multiply by 60*1000 to get milliseconds
+                workTimeMs = workValue * 60 * 1000L;
+                breakTimeMs = breakValue * 60 * 1000L;
+                longBreakTimeMs = longBreakValue * 60 * 1000L;
+            }
 
             System.out.println("DEBUG - Converted work time: " + workTimeMs + " ms");
             System.out.println("DEBUG - Converted break time: " + breakTimeMs + " ms");
@@ -176,7 +220,8 @@ public class SettingsFragment extends Fragment {
                 e.printStackTrace();
             }
 
-            Toast.makeText(getContext(), "Settings saved successfully!", Toast.LENGTH_SHORT).show();
+            String unit = isSecondsMode ? "seconds" : "minutes";
+            Toast.makeText(getContext(), "Settings saved successfully! Using " + unit + " mode.", Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -195,20 +240,42 @@ public class SettingsFragment extends Fragment {
             System.out.println("DEBUG - Raw break time: " + breakTimeMs + " ms");
             System.out.println("DEBUG - Raw long break time: " + longBreakTimeMs + " ms");
 
-            // Convert to minutes
-            int workMinutes = (int) (workTimeMs / (1000 * 60));
-            int breakMinutes = (int) (breakTimeMs / (1000 * 60));
-            int longBreakMinutes = (int) (longBreakTimeMs / (1000 * 60));
+            int workValue, breakValue, longBreakValue;
+            String unit;
+
+            if (isSecondsMode) {
+                // Convert milliseconds to seconds
+                workValue = (int) (workTimeMs / 1000);
+                breakValue = (int) (breakTimeMs / 1000);
+                longBreakValue = (int) (longBreakTimeMs / 1000);
+                unit = " seconds";
+
+                // Clamp values to reasonable ranges for seconds mode
+                workValue = Math.max(1, Math.min(60, workValue));
+                breakValue = Math.max(1, Math.min(30, breakValue));
+                longBreakValue = Math.max(5, Math.min(60, longBreakValue));
+            } else {
+                // Convert milliseconds to minutes
+                workValue = (int) (workTimeMs / (1000 * 60));
+                breakValue = (int) (breakTimeMs / (1000 * 60));
+                longBreakValue = (int) (longBreakTimeMs / (1000 * 60));
+                unit = " minutes";
+
+                // Clamp values to reasonable ranges for minutes mode
+                workValue = Math.max(1, Math.min(60, workValue));
+                breakValue = Math.max(1, Math.min(30, breakValue));
+                longBreakValue = Math.max(5, Math.min(60, longBreakValue));
+            }
 
             // Update UI
-            seekBarWorkDuration.setProgress(workMinutes);
-            tvWorkDurationValue.setText(workMinutes + " minutes");
+            seekBarWorkDuration.setProgress(workValue);
+            tvWorkDurationValue.setText(workValue + unit);
 
-            seekBarShortBreak.setProgress(breakMinutes);
-            tvShortBreakValue.setText(breakMinutes + " minutes");
+            seekBarShortBreak.setProgress(breakValue);
+            tvShortBreakValue.setText(breakValue + unit);
 
-            seekBarLongBreak.setProgress(longBreakMinutes);
-            tvLongBreakValue.setText(longBreakMinutes + " minutes");
+            seekBarLongBreak.setProgress(longBreakValue);
+            tvLongBreakValue.setText(longBreakValue + unit);
 
             // Load sessions and daily goal
             int sessions = handlerSharedPreferences.getSessionsBeforeLongBreak();
@@ -227,15 +294,32 @@ public class SettingsFragment extends Fragment {
 
     private void resetToDefaults() {
         try {
+            int workDefault, breakDefault, longBreakDefault;
+            String unit;
+
+            if (isSecondsMode) {
+                // Use testing defaults for seconds mode
+                workDefault = TEST_WORK_DURATION;
+                breakDefault = TEST_SHORT_BREAK;
+                longBreakDefault = TEST_LONG_BREAK;
+                unit = " seconds";
+            } else {
+                // Use normal defaults for minutes mode
+                workDefault = DEFAULT_WORK_DURATION;
+                breakDefault = DEFAULT_SHORT_BREAK;
+                longBreakDefault = DEFAULT_LONG_BREAK;
+                unit = " minutes";
+            }
+
             // Reset SeekBars to default values
-            seekBarWorkDuration.setProgress(DEFAULT_WORK_DURATION);
-            tvWorkDurationValue.setText(DEFAULT_WORK_DURATION + " minutes");
+            seekBarWorkDuration.setProgress(workDefault);
+            tvWorkDurationValue.setText(workDefault + unit);
 
-            seekBarShortBreak.setProgress(DEFAULT_SHORT_BREAK);
-            tvShortBreakValue.setText(DEFAULT_SHORT_BREAK + " minutes");
+            seekBarShortBreak.setProgress(breakDefault);
+            tvShortBreakValue.setText(breakDefault + unit);
 
-            seekBarLongBreak.setProgress(DEFAULT_LONG_BREAK);
-            tvLongBreakValue.setText(DEFAULT_LONG_BREAK + " minutes");
+            seekBarLongBreak.setProgress(longBreakDefault);
+            tvLongBreakValue.setText(longBreakDefault + unit);
 
             seekBarSessions.setProgress(DEFAULT_SESSIONS);
             tvSessionsValue.setText(DEFAULT_SESSIONS + " sessions");
@@ -244,9 +328,20 @@ public class SettingsFragment extends Fragment {
             tvDailyGoalValue.setText(DEFAULT_DAILY_GOAL + " sessions");
 
             // Save default values to SharedPreferences
-            handlerSharedPreferences.setWorkTime(DEFAULT_WORK_DURATION * 60 * 1000L);
-            handlerSharedPreferences.setBreakTime(DEFAULT_SHORT_BREAK * 60 * 1000L);
-            handlerSharedPreferences.setLongBreakTime(DEFAULT_LONG_BREAK * 60 * 1000L);
+            long workTimeMs, breakTimeMs, longBreakTimeMs;
+            if (isSecondsMode) {
+                workTimeMs = workDefault * 1000L;
+                breakTimeMs = breakDefault * 1000L;
+                longBreakTimeMs = longBreakDefault * 1000L;
+            } else {
+                workTimeMs = workDefault * 60 * 1000L;
+                breakTimeMs = breakDefault * 60 * 1000L;
+                longBreakTimeMs = longBreakDefault * 60 * 1000L;
+            }
+
+            handlerSharedPreferences.setWorkTime(workTimeMs);
+            handlerSharedPreferences.setBreakTime(breakTimeMs);
+            handlerSharedPreferences.setLongBreakTime(longBreakTimeMs);
             handlerSharedPreferences.setSessionsBeforeLongBreak(DEFAULT_SESSIONS);
             handlerSharedPreferences.setDailyGoal(DEFAULT_DAILY_GOAL);
 
@@ -257,7 +352,7 @@ public class SettingsFragment extends Fragment {
                 e.printStackTrace();
             }
 
-            Toast.makeText(getContext(), "Settings reset to defaults!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Settings reset to defaults! Using " + (isSecondsMode ? "seconds" : "minutes") + " mode.", Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
             e.printStackTrace();

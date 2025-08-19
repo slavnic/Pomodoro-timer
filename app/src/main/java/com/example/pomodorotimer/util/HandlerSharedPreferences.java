@@ -147,19 +147,23 @@ public class HandlerSharedPreferences {
         return sharedPreferences.getInt(SESSIONS_BEFORE_LONG_BREAK_KEY, 4);
     }
 
-    // Daily goal
+    // Daily Goal
     public void setDailyGoal(int goal) {
+        Log.d(TAG, "setDailyGoal: " + goal);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putInt(DAILY_GOAL_KEY, goal);
         editor.apply();
 
         // Notify daily goal change listeners
         for (OnDailyGoalChangeListener listener : dailyGoalChangeListeners) {
+            Log.d(TAG, "Notifying daily goal listener: " + listener.getClass().getSimpleName());
             listener.onDailyGoalChanged(goal);
         }
     }
 
     public int getDailyGoal() {
-        return sharedPreferences.getInt(DAILY_GOAL_KEY, 8);
+        int dailyGoal = sharedPreferences.getInt(DAILY_GOAL_KEY, 8);
+        Log.d(TAG, "getDailyGoal: " + dailyGoal);
+        return dailyGoal;
     }
 }

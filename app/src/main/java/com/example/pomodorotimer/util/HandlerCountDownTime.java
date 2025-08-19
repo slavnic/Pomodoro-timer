@@ -23,7 +23,7 @@ public class HandlerCountDownTime {
     private static boolean itWillBeStartAtNextState;
     private static boolean isCountdownRunning = false;
     private OnWorkSessionCompletedListener workSessionCompletedListener;
-    private static Context context; // Added context field
+    private static Context context; // Add context for HandlerSound
 
     private static long currentWorkMinutes = 0;
     private static boolean workCompleted = false;
@@ -174,7 +174,7 @@ public class HandlerCountDownTime {
     public static void setCountDown(@NotNull View root) {
         itWillBeStartAtNextState = true;
 
-        // Set context from the view
+        // Store context for HandlerSound
         context = root.getContext();
 
         mCvCountdownView = root.findViewById(R.id.countDown);
@@ -253,27 +253,26 @@ public class HandlerCountDownTime {
                 isCountdownRunning = false;
                 itWillBeStartAtNextState = true;
 
-                // Play sound based on current mode before switching
-                try {
-                    if (context != null) {
-                        HandlerSound soundHandler = HandlerSound.getInstance(context);
-                        if (currentMode == TimerMode.WORK) {
-                            soundHandler.playWorkTimeFinishedSound();
-                        } else if (currentMode == TimerMode.BREAK) {
-                            soundHandler.playShortBreakTimeFinishedSound();
-                        } else if (currentMode == TimerMode.LONG_BREAK) {
-                            soundHandler.playLongBreakTimeFinishedSound();
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error playing sound", e);
-                }
-
                 try {
                     if (currentMode == TimerMode.WORK) {
-                        currentWorkMinutes = HandlerSharedPreferences.getInstance().getWorkTime() / 60000;
+                        // Play work time finished sound
+                        if (context != null) {
+                            HandlerSound.getInstance(context).playWorkTimeFinishedSound();
+                            Log.d(TAG, "Playing work time finished sound");
+                        }
+
+                        // Convert work time to minutes (for very short testing times, use minimum of 0.1 minutes)
+                        long workTimeMs = HandlerSharedPreferences.getInstance().getWorkTime();
+                        currentWorkMinutes = Math.max(workTimeMs / 60000, 1); // Always save at least 1 minute equivalent
+                        if (workTimeMs < 60000) {
+                            // If less than 1 minute (testing mode), still count as 1 minute for statistics
+                            currentWorkMinutes = 1;
+                            Log.d(TAG, "Testing mode detected - work time " + workTimeMs + "ms counted as 1 minute for statistics");
+                        } else {
+                            currentWorkMinutes = workTimeMs / 60000;
+                        }
                         workCompleted = true;
-                        Log.d(TAG, "Work completed: " + currentWorkMinutes + " minutes");
+                        Log.d(TAG, "Work completed: " + currentWorkMinutes + " minutes (original: " + workTimeMs + "ms)");
 
                         // Check if it's time for long break
                         int sessionsBeforeLongBreak = HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak();
@@ -311,11 +310,25 @@ public class HandlerCountDownTime {
                         }
 
                     } else if (currentMode == TimerMode.BREAK) {
-                        long breakMinutes = HandlerSharedPreferences.getInstance().getBreakTime() / 60000;
+                        // Play short break time finished sound
+                        if (context != null) {
+                            HandlerSound.getInstance(context).playShortBreakTimeFinishedSound();
+                            Log.d(TAG, "Playing short break time finished sound");
+                        }
+
+                        long breakTimeMs = HandlerSharedPreferences.getInstance().getBreakTime();
+                        long breakMinutes;
+                        if (breakTimeMs < 60000) {
+                            // If less than 1 minute (testing mode), still count as 1 minute for statistics
+                            breakMinutes = 1;
+                            Log.d(TAG, "Testing mode detected - break time " + breakTimeMs + "ms counted as 1 minute for statistics");
+                        } else {
+                            breakMinutes = breakTimeMs / 60000;
+                        }
 
                         if (workCompleted && currentWorkMinutes > 0) {
                             HandlerDB.getInstance().saveCompleteSession(currentWorkMinutes, breakMinutes);
-                            Log.d(TAG, "Complete session saved: Work=" + currentWorkMinutes + "min, Break=" + breakMinutes + "min");
+                            Log.d(TAG, "Complete session saved: Work=" + currentWorkMinutes + "min, Break=" + breakMinutes + "min (original: " + breakTimeMs + "ms)");
 
                             try {
                                 HandlerProgressBar.getInstance().onSessionCompleted();
@@ -341,11 +354,25 @@ public class HandlerCountDownTime {
                         Log.d(TAG, "Switched to WORK mode with time: " + workTime + " ms");
 
                     } else if (currentMode == TimerMode.LONG_BREAK) {
-                        long longBreakMinutes = HandlerSharedPreferences.getInstance().getLongBreakTime() / 60000;
+                        // Play long break time finished sound
+                        if (context != null) {
+                            HandlerSound.getInstance(context).playLongBreakTimeFinishedSound();
+                            Log.d(TAG, "Playing long break time finished sound");
+                        }
+
+                        long longBreakTimeMs = HandlerSharedPreferences.getInstance().getLongBreakTime();
+                        long longBreakMinutes;
+                        if (longBreakTimeMs < 60000) {
+                            // If less than 1 minute (testing mode), still count as 1 minute for statistics
+                            longBreakMinutes = 1;
+                            Log.d(TAG, "Testing mode detected - long break time " + longBreakTimeMs + "ms counted as 1 minute for statistics");
+                        } else {
+                            longBreakMinutes = longBreakTimeMs / 60000;
+                        }
 
                         if (workCompleted && currentWorkMinutes > 0) {
                             HandlerDB.getInstance().saveCompleteSession(currentWorkMinutes, longBreakMinutes);
-                            Log.d(TAG, "Complete session with long break saved: Work=" + currentWorkMinutes + "min, LongBreak=" + longBreakMinutes + "min");
+                            Log.d(TAG, "Complete session with long break saved: Work=" + currentWorkMinutes + "min, LongBreak=" + longBreakMinutes + "min (original: " + longBreakTimeMs + "ms)");
 
                             try {
                                 HandlerProgressBar.getInstance().onSessionCompleted();

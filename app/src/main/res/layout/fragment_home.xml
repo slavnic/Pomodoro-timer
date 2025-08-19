@@ -12,16 +12,16 @@
         android:id="@+id/countDown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
         app:isHideTimeBackground="true"
         app:isShowHour="true"
         app:isShowMinute="true"
         app:isShowSecond="true"
         app:isTimeTextBold="true"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/text_daily_goal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.374"
         app:suffixGravity="bottom"
         app:suffixHour="h"
         app:suffixMinute="m"
@@ -32,25 +32,11 @@
         app:timeTextSize="48sp"
         tools:ignore="MissingConstraints" />
 
-    <com.daimajia.numberprogressbar.NumberProgressBar
-        android:id="@+id/number_progress_bar"
-
-
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_daily_goal"
-        app:layout_constraintVertical_bias="0.031"
-        tools:ignore="MissingConstraints" />
-
     <TextView
         android:id="@+id/text_daily_goal"
         android:layout_width="202dp"
         android:layout_height="12dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="320dp"
         android:fontFamily="serif-monospace"
         android:text="@string/daily_goal_progress"
         android:textAlignment="center"
@@ -58,12 +44,81 @@
         android:textColor="@color/thirdColor"
         android:textSize="12sp"
         android:textStyle="italic"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/countDown"
-        app:layout_constraintVertical_bias="0.333" />
+        app:layout_constraintTop_toTopOf="parent" />
 
+    <com.daimajia.numberprogressbar.NumberProgressBar
+        android:id="@+id/number_progress_bar"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_daily_goal"
+        app:layout_constraintVertical_bias="0.031"
+        tools:ignore="MissingConstraints" />
+
+    <!-- TODO Section -->
+    <LinearLayout
+        android:id="@+id/todo_section"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="50dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/number_progress_bar">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TODO List"
+                android:textColor="@color/firstColor"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/fab_add_todo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/fab_background"
+                android:src="@drawable/ic_plus_black"
+                android:contentDescription="Add TODO"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="12dp"
+                android:scaleType="centerInside" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_todos"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/text_empty_todos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="No TODOs yet. Tap + to add one!"
+            android:textAlignment="center"
+            android:textColor="@color/thirdColor"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

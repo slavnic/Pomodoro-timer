@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Narandžasti krug za pozadinu -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#FF8C00" />
+            <size android:width="56dp" android:height="56dp" />
+        </shape>
+    </item>
+
+    <!-- Crni + znak u sredini -->
+    <item android:gravity="center">
+        <vector
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+
+            <path
+                android:pathData="M12,2L12,22"
+                android:strokeWidth="3"
+                android:strokeColor="#000000"
+                android:strokeLineCap="round"/>
+
+            <path
+                android:pathData="M2,12L22,12"
+                android:strokeWidth="3"
+                android:strokeColor="#000000"
+                android:strokeLineCap="round"/>
+
+        </vector>
+    </item>
+
+</layer-list>
+

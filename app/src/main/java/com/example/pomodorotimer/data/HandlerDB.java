@@ -20,7 +20,7 @@ public class HandlerDB extends SQLiteOpenHelper {
 
     private static final String TAG = "HandlerDB";
     private static final String DATABASE_NAME = "work_timer.db";
-    private static final int DATABASE_VERSION = 4; // Increment version to trigger migration
+    private static final int DATABASE_VERSION = 5; // Increment version to add TODO table
 
     // Work sessions table
     private static final String TABLE_WORK_SESSIONS = "work_sessions";
@@ -41,6 +41,14 @@ public class HandlerDB extends SQLiteOpenHelper {
     private static final String KEY_LONG_BREAK_ID = "id";
     private static final String KEY_LONG_BREAK_DATE = "date";
     private static final String KEY_LONG_BREAK_TIME_MINUTES = "long_break_time_minutes";
+
+    // TODO table
+    private static final String TABLE_TODOS = "todos";
+    private static final String KEY_TODO_ID = "id";
+    private static final String KEY_TODO_TITLE = "title";
+    private static final String KEY_TODO_DESCRIPTION = "description";
+    private static final String KEY_TODO_IS_COMPLETED = "is_completed";
+    private static final String KEY_TODO_DATE_CREATED = "date_created";
 
 
     private static HandlerDB instance;
@@ -96,9 +104,19 @@ public class HandlerDB extends SQLiteOpenHelper {
                 + KEY_LONG_BREAK_DATE + " TEXT NOT NULL"
                 + ")";
 
+        // Create TODOs table
+        String CREATE_TODOS_TABLE = "CREATE TABLE " + TABLE_TODOS + "("
+                + KEY_TODO_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_TODO_TITLE + " TEXT NOT NULL,"
+                + KEY_TODO_DESCRIPTION + " TEXT,"
+                + KEY_TODO_IS_COMPLETED + " INTEGER DEFAULT 0,"
+                + KEY_TODO_DATE_CREATED + " TEXT NOT NULL"
+                + ")";
+
         db.execSQL(CREATE_WORK_SESSIONS_TABLE);
         db.execSQL(CREATE_BREAK_SESSIONS_TABLE);
         db.execSQL(CREATE_LONG_BREAK_SESSIONS_TABLE);
+        db.execSQL(CREATE_TODOS_TABLE);
         Log.d(TAG, "All database tables created");
     }
 
@@ -139,6 +157,22 @@ public class HandlerDB extends SQLiteOpenHelper {
                 Log.d(TAG, "Created break and long break tables");
             } catch (Exception e) {
                 Log.e(TAG, "Error creating break tables: " + e.getMessage());
+            }
+        }
+        if (oldVersion < 5) {
+            try {
+                String CREATE_TODOS_TABLE = "CREATE TABLE " + TABLE_TODOS + "("
+                        + KEY_TODO_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        + KEY_TODO_TITLE + " TEXT NOT NULL,"
+                        + KEY_TODO_DESCRIPTION + " TEXT,"
+                        + KEY_TODO_IS_COMPLETED + " INTEGER DEFAULT 0,"
+                        + KEY_TODO_DATE_CREATED + " TEXT NOT NULL"
+                        + ")";
+
+                db.execSQL(CREATE_TODOS_TABLE);
+                Log.d(TAG, "Created TODOs table");
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating TODOs table: " + e.getMessage());
             }
         }
     }
@@ -672,5 +706,89 @@ public class HandlerDB extends SQLiteOpenHelper {
         } finally {
             db.close();
         }
+    }
+
+    // TODO CRUD operations
+    public long addTodo(com.example.pomodorotimer.model.Todo todo) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_TODO_TITLE, todo.getTitle());
+        values.put(KEY_TODO_DESCRIPTION, todo.getDescription());
+        values.put(KEY_TODO_IS_COMPLETED, todo.isCompleted() ? 1 : 0);
+        values.put(KEY_TODO_DATE_CREATED, getCurrentDate());
+
+        long result = db.insert(TABLE_TODOS, null, values);
+        db.close();
+
+        Log.d(TAG, "TODO added with ID: " + result);
+        return result;
+    }
+
+    public java.util.List<com.example.pomodorotimer.model.Todo> getAllTodos() {
+        java.util.List<com.example.pomodorotimer.model.Todo> todoList = new java.util.ArrayList<>();
+        String selectQuery = "SELECT * FROM " + TABLE_TODOS + " ORDER BY " + KEY_TODO_DATE_CREATED + " DESC";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                com.example.pomodorotimer.model.Todo todo = new com.example.pomodorotimer.model.Todo();
+                todo.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_TODO_ID)));
+                todo.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_TITLE)));
+                todo.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_DESCRIPTION)));
+                todo.setCompleted(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TODO_IS_COMPLETED)) == 1);
+                todo.setDateCreated(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_DATE_CREATED)));
+                todoList.add(todo);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+        return todoList;
+    }
+
+    public int updateTodo(com.example.pomodorotimer.model.Todo todo) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_TODO_TITLE, todo.getTitle());
+        values.put(KEY_TODO_DESCRIPTION, todo.getDescription());
+        values.put(KEY_TODO_IS_COMPLETED, todo.isCompleted() ? 1 : 0);
+
+        int result = db.update(TABLE_TODOS, values, KEY_TODO_ID + " = ?",
+                new String[]{String.valueOf(todo.getId())});
+        db.close();
+
+        Log.d(TAG, "TODO updated: " + result + " rows affected");
+        return result;
+    }
+
+    public void deleteTodo(long todoId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int result = db.delete(TABLE_TODOS, KEY_TODO_ID + " = ?",
+                new String[]{String.valueOf(todoId)});
+        db.close();
+
+        Log.d(TAG, "TODO deleted: " + result + " rows affected");
+    }
+
+    public com.example.pomodorotimer.model.Todo getTodo(long todoId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_TODOS, new String[]{KEY_TODO_ID, KEY_TODO_TITLE,
+                        KEY_TODO_DESCRIPTION, KEY_TODO_IS_COMPLETED, KEY_TODO_DATE_CREATED}, KEY_TODO_ID + "=?",
+                new String[]{String.valueOf(todoId)}, null, null, null, null);
+
+        com.example.pomodorotimer.model.Todo todo = null;
+        if (cursor != null && cursor.moveToFirst()) {
+            todo = new com.example.pomodorotimer.model.Todo();
+            todo.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_TODO_ID)));
+            todo.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_TITLE)));
+            todo.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_DESCRIPTION)));
+            todo.setCompleted(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TODO_IS_COMPLETED)) == 1);
+            todo.setDateCreated(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_DATE_CREATED)));
+            cursor.close();
+        }
+        db.close();
+        return todo;
     }
 }

@@ -50,6 +50,19 @@
 
         </LinearLayout>
 
+        <!-- Export Button -->
+        <Button
+            android:id="@+id/btnExportCSV"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp"
+            android:text="Export Statistics"
+            android:backgroundTint="@color/firstColor"
+            android:textColor="@android:color/white"
+            android:drawableStart="@android:drawable/stat_sys_download"
+            android:drawablePadding="8dp"
+            android:gravity="center" />
+
         <CalendarView
             android:id="@+id/calendarView"
             android:layout_width="match_parent"

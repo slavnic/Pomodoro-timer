@@ -29,7 +29,6 @@ public class BreakState extends State {
             /*
              * SET BREAK COLOR AT COUNTDOWN OBJECT
              * */
-            // UKLONJEN increaseSession() iz ovde jer break ne treba da se računa kao sesija
             long realSessionsBeforeLongBreak = HandlerTime.getInstance().getRealTime(HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak());
 
             if (ContextState.getInstance().getCurrentSession() >= realSessionsBeforeLongBreak) {
@@ -69,7 +68,6 @@ public class BreakState extends State {
         Log.d(BREAK_STATE, "I AM IN STOP.");
 
         try {
-            // change state
             State nextState = StateFlyweightFactory.getInstance().getState(WorkState.WORK_STATE);
             Log.d(BREAK_STATE, "Next State -> " + nextState.toString());
             ContextState.setState(nextState);

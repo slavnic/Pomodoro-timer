@@ -42,6 +42,9 @@ dependencies {
     implementation("com.daimajia.numberprogressbar:library:1.4@aar")
     implementation ("androidx.appcompat:appcompat:1.6.1")
 
+    // PDF generation library
+    implementation ("com.itextpdf:itext7-core:7.2.5")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

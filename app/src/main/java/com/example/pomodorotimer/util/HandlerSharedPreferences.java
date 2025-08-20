@@ -47,7 +47,6 @@ public class HandlerSharedPreferences {
         return instance;
     }
 
-    // Time change listener management
     public void addOnTimeChangeListener(OnTimeChangeListener listener) {
         if (listener != null && !timeChangeListeners.contains(listener)) {
             timeChangeListeners.add(listener);
@@ -62,7 +61,6 @@ public class HandlerSharedPreferences {
         }
     }
 
-    // Daily goal change listener management
     public void addDailyGoalChangeListener(OnDailyGoalChangeListener listener) {
         if (listener != null && !dailyGoalChangeListeners.contains(listener)) {
             dailyGoalChangeListeners.add(listener);
@@ -77,7 +75,6 @@ public class HandlerSharedPreferences {
         }
     }
 
-    // Work Time
     public void setWorkTime(long workTimeMs) {
         Log.d(TAG, "setWorkTime: " + workTimeMs + " ms");
         SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -95,14 +92,12 @@ public class HandlerSharedPreferences {
         return workTime;
     }
 
-    // Break Time
     public void setBreakTime(long breakTimeMs) {
         Log.d(TAG, "setBreakTime: " + breakTimeMs + " ms");
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putLong(BREAK_TIME_KEY, breakTimeMs);
         editor.apply();
 
-        // Notify listeners
         for (OnTimeChangeListener listener : timeChangeListeners) {
             listener.onBreakTimeChanged(breakTimeMs);
         }
@@ -114,7 +109,6 @@ public class HandlerSharedPreferences {
         return breakTime;
     }
 
-    // Long Break Time
     public void setLongBreakTime(long longBreakTimeMs) {
         Log.d(TAG, "setLongBreakTime: " + longBreakTimeMs + " ms");
         Log.d(TAG, "Number of time change listeners: " + timeChangeListeners.size());
@@ -136,7 +130,6 @@ public class HandlerSharedPreferences {
         return longBreakTime;
     }
 
-    // Sessions before long break
     public void setSessionsBeforeLongBreak(int sessions) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putInt(SESSIONS_BEFORE_LONG_BREAK_KEY, sessions);
@@ -147,14 +140,12 @@ public class HandlerSharedPreferences {
         return sharedPreferences.getInt(SESSIONS_BEFORE_LONG_BREAK_KEY, 4);
     }
 
-    // Daily Goal
     public void setDailyGoal(int goal) {
         Log.d(TAG, "setDailyGoal: " + goal);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putInt(DAILY_GOAL_KEY, goal);
         editor.apply();
 
-        // Notify daily goal change listeners
         for (OnDailyGoalChangeListener listener : dailyGoalChangeListeners) {
             Log.d(TAG, "Notifying daily goal listener: " + listener.getClass().getSimpleName());
             listener.onDailyGoalChanged(goal);

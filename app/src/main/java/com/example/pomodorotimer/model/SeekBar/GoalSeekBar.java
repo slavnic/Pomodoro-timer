@@ -21,11 +21,9 @@ public class GoalSeekBar implements SeekBar.OnSeekBarChangeListener {
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-        // Not needed
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        // Not needed
     }
 }

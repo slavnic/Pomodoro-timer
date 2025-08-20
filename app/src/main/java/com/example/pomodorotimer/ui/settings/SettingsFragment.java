@@ -179,7 +179,6 @@ public class SettingsFragment extends Fragment {
 
     private void saveSettings() {
         try {
-            // Get values from SeekBars
             int workValue = seekBarWorkDuration.getProgress();
             int breakValue = seekBarShortBreak.getProgress();
             int longBreakValue = seekBarLongBreak.getProgress();
@@ -188,15 +187,12 @@ public class SettingsFragment extends Fragment {
             System.out.println("DEBUG - Saving break value: " + breakValue + (isSecondsMode ? " seconds" : " minutes"));
             System.out.println("DEBUG - Saving long break value: " + longBreakValue + (isSecondsMode ? " seconds" : " minutes"));
 
-            // Convert to milliseconds based on current mode
             long workTimeMs, breakTimeMs, longBreakTimeMs;
             if (isSecondsMode) {
-                // If in seconds mode, multiply by 1000 to get milliseconds
                 workTimeMs = workValue * 1000L;
                 breakTimeMs = breakValue * 1000L;
                 longBreakTimeMs = longBreakValue * 1000L;
             } else {
-                // If in minutes mode, multiply by 60*1000 to get milliseconds
                 workTimeMs = workValue * 60 * 1000L;
                 breakTimeMs = breakValue * 60 * 1000L;
                 longBreakTimeMs = longBreakValue * 60 * 1000L;
@@ -206,14 +202,12 @@ public class SettingsFragment extends Fragment {
             System.out.println("DEBUG - Converted break time: " + breakTimeMs + " ms");
             System.out.println("DEBUG - Converted long break time: " + longBreakTimeMs + " ms");
 
-            // Save using HandlerSharedPreferences - ovo će automatski obavestiti sve listenere
             handlerSharedPreferences.setWorkTime(workTimeMs);
             handlerSharedPreferences.setBreakTime(breakTimeMs);
             handlerSharedPreferences.setLongBreakTime(longBreakTimeMs);
             handlerSharedPreferences.setSessionsBeforeLongBreak(seekBarSessions.getProgress());
             handlerSharedPreferences.setDailyGoal(seekBarDailyGoal.getProgress());
 
-            // Eksplicitno ažuriraj progress bar nakon promene daily goal-a
             try {
                 HandlerProgressBar.getInstance().refreshProgress();
             } catch (Exception e) {
@@ -231,7 +225,6 @@ public class SettingsFragment extends Fragment {
 
     private void loadSettings() {
         try {
-            // Load from HandlerSharedPreferences
             long workTimeMs = handlerSharedPreferences.getWorkTime();
             long breakTimeMs = handlerSharedPreferences.getBreakTime();
             long longBreakTimeMs = handlerSharedPreferences.getLongBreakTime();
@@ -267,7 +260,6 @@ public class SettingsFragment extends Fragment {
                 longBreakValue = Math.max(5, Math.min(60, longBreakValue));
             }
 
-            // Update UI
             seekBarWorkDuration.setProgress(workValue);
             tvWorkDurationValue.setText(workValue + unit);
 
@@ -277,7 +269,6 @@ public class SettingsFragment extends Fragment {
             seekBarLongBreak.setProgress(longBreakValue);
             tvLongBreakValue.setText(longBreakValue + unit);
 
-            // Load sessions and daily goal
             int sessions = handlerSharedPreferences.getSessionsBeforeLongBreak();
             int dailyGoal = handlerSharedPreferences.getDailyGoal();
 
@@ -298,20 +289,17 @@ public class SettingsFragment extends Fragment {
             String unit;
 
             if (isSecondsMode) {
-                // Use testing defaults for seconds mode
                 workDefault = TEST_WORK_DURATION;
                 breakDefault = TEST_SHORT_BREAK;
                 longBreakDefault = TEST_LONG_BREAK;
                 unit = " seconds";
             } else {
-                // Use normal defaults for minutes mode
                 workDefault = DEFAULT_WORK_DURATION;
                 breakDefault = DEFAULT_SHORT_BREAK;
                 longBreakDefault = DEFAULT_LONG_BREAK;
                 unit = " minutes";
             }
 
-            // Reset SeekBars to default values
             seekBarWorkDuration.setProgress(workDefault);
             tvWorkDurationValue.setText(workDefault + unit);
 
@@ -327,7 +315,6 @@ public class SettingsFragment extends Fragment {
             seekBarDailyGoal.setProgress(DEFAULT_DAILY_GOAL);
             tvDailyGoalValue.setText(DEFAULT_DAILY_GOAL + " sessions");
 
-            // Save default values to SharedPreferences
             long workTimeMs, breakTimeMs, longBreakTimeMs;
             if (isSecondsMode) {
                 workTimeMs = workDefault * 1000L;
@@ -345,7 +332,6 @@ public class SettingsFragment extends Fragment {
             handlerSharedPreferences.setSessionsBeforeLongBreak(DEFAULT_SESSIONS);
             handlerSharedPreferences.setDailyGoal(DEFAULT_DAILY_GOAL);
 
-            // Eksplicitno ažuriraj progress bar nakon reset-a
             try {
                 HandlerProgressBar.getInstance().refreshProgress();
             } catch (Exception e) {

@@ -39,13 +39,11 @@ public class HandlerSound {
 
     private void playSound(int soundResourceId) {
         try {
-            // Release any existing MediaPlayer
             if (mediaPlayer != null) {
                 mediaPlayer.release();
                 mediaPlayer = null;
             }
 
-            // Create and start new MediaPlayer
             mediaPlayer = MediaPlayer.create(context, soundResourceId);
             if (mediaPlayer != null) {
                 mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {

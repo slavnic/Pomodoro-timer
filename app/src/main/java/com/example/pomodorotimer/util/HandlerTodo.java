@@ -83,7 +83,6 @@ public class HandlerTodo extends RecyclerView.Adapter<HandlerTodo.TodoViewHolder
 
             completedCheckBox.setChecked(todo.isCompleted());
 
-            // Set click listeners
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onTodoClick(todo);

@@ -56,11 +56,9 @@ public class SeekBarFactory {
             long fullValue = HandlerSharedPreferences.getInstance().getLongBreakTime();
             seekBar.setProgress((int) HandlerTime.getInstance().getRealTime(fullValue));
         } else if (type == R.id.seekBarSessions) {
-            // Sessions before long break - this is just a number, not time
             int sessions = HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak();
             seekBar.setProgress(sessions);
         } else if (type == R.id.seekBarDailyGoal) {
-            // Daily goal - number of sessions per day
             int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
             seekBar.setProgress(dailyGoal);
         } else {

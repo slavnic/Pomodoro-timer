@@ -44,9 +44,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
     private static void init() throws Exception {
         numberProgressBar = root.findViewById(R.id.number_progress_bar);
 
-        /*
-         *  SET DAILY GOAL - Always set to 100% scale
-         * */
         int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
         Log.d(TAG, "init - dailyGoal: " + dailyGoal + " sessions");
 
@@ -203,7 +200,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
 
     private void updateProgressBar(int completedSessions, int dailyGoal) {
         if (numberProgressBar != null) {
-            // Za NumberProgressBar koristimo procenat umesto direktnih vrednosti
             int progressPercentage = 0;
             if (dailyGoal > 0) {
                 progressPercentage = Math.min(100, (completedSessions * 100) / dailyGoal);
@@ -223,13 +219,11 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
     public void onSessionCompleted() {
         Log.d(TAG, "onSessionCompleted called");
         try {
-            // Dobij današnji broj kompletnih sesija iz baze
             int completedSessions = HandlerDB.getInstance().getTotalSessionsToday();
             int dailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
 
             Log.d(TAG, "Completed sessions today: " + completedSessions + ", Daily goal: " + dailyGoal);
 
-            // Ažuriraj progress bar
             updateProgressBar(completedSessions, dailyGoal);
 
         } catch (Exception e) {
@@ -245,7 +239,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
     public void onDailyGoalChanged(int newDailyGoal) {
         Log.d(TAG, "onDailyGoalChanged: " + newDailyGoal + " sessions");
 
-        // Ensure UI update happens on the main thread
         if (numberProgressBar != null && context != null) {
             if (context instanceof android.app.Activity) {
                 ((android.app.Activity) context).runOnUiThread(() -> {

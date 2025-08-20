@@ -52,11 +52,9 @@ public class WorkState extends State {
              * */
             long workTimeInMinutes = HandlerSharedPreferences.getInstance().getWorkTime() / (1000 * 60); // Convert milliseconds to minutes
 
-            // Save work session to database
             HandlerDB.getInstance().saveWorkSession(workTimeInMinutes);
             Log.d(WORK_STATE, "Work session saved: " + workTimeInMinutes + " minutes");
 
-            // change state
             State nextState = StateFlyweightFactory.getInstance().getState(BreakState.BREAK_STATE);
             Log.d(WORK_STATE, "Next State -> " + nextState.toString());
             ContextState.setState(nextState);

@@ -255,13 +255,11 @@ public class HandlerCountDownTime {
 
                 try {
                     if (currentMode == TimerMode.WORK) {
-                        // Play work time finished sound
                         if (context != null) {
                             HandlerSound.getInstance(context).playWorkTimeFinishedSound();
                             Log.d(TAG, "Playing work time finished sound");
                         }
 
-                        // Convert work time to minutes (for very short testing times, use minimum of 0.1 minutes)
                         long workTimeMs = HandlerSharedPreferences.getInstance().getWorkTime();
                         currentWorkMinutes = Math.max(workTimeMs / 60000, 1); // Always save at least 1 minute equivalent
                         if (workTimeMs < 60000) {
@@ -310,7 +308,6 @@ public class HandlerCountDownTime {
                         }
 
                     } else if (currentMode == TimerMode.BREAK) {
-                        // Play short break time finished sound
                         if (context != null) {
                             HandlerSound.getInstance(context).playShortBreakTimeFinishedSound();
                             Log.d(TAG, "Playing short break time finished sound");
@@ -354,7 +351,6 @@ public class HandlerCountDownTime {
                         Log.d(TAG, "Switched to WORK mode with time: " + workTime + " ms");
 
                     } else if (currentMode == TimerMode.LONG_BREAK) {
-                        // Play long break time finished sound
                         if (context != null) {
                             HandlerSound.getInstance(context).playLongBreakTimeFinishedSound();
                             Log.d(TAG, "Playing long break time finished sound");
@@ -363,7 +359,6 @@ public class HandlerCountDownTime {
                         long longBreakTimeMs = HandlerSharedPreferences.getInstance().getLongBreakTime();
                         long longBreakMinutes;
                         if (longBreakTimeMs < 60000) {
-                            // If less than 1 minute (testing mode), still count as 1 minute for statistics
                             longBreakMinutes = 1;
                             Log.d(TAG, "Testing mode detected - long break time " + longBreakTimeMs + "ms counted as 1 minute for statistics");
                         } else {

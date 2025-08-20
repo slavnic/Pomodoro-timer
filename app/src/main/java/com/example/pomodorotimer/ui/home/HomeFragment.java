@@ -84,7 +84,6 @@ public class HomeFragment extends Fragment implements
             e.printStackTrace();
         }
 
-        // Initialize TODO functionality
         try {
             setupTodoComponents();
         } catch (Exception e) {
@@ -100,7 +99,6 @@ public class HomeFragment extends Fragment implements
         super.onViewCreated(view, savedInstanceState);
 
         try {
-            // Get HandlerCountDownTime instance
             handlerCountDownTime = HandlerCountDownTime.getInstance();
             if (handlerCountDownTime != null) {
                 Log.d(TAG, "HandlerCountDownTime instance obtained");
@@ -128,7 +126,6 @@ public class HomeFragment extends Fragment implements
         try {
             if (handlerCountDownTime != null && !handlerCountDownTime.isRunning()) {
                 Log.d(TAG, "Timer not running, recreating countdown with new time");
-                // Reinitialize the countdown with new time
                 if (rootView != null) {
                     HandlerCountDownTime.setCountDown(rootView);
                 }
@@ -191,8 +188,6 @@ public class HomeFragment extends Fragment implements
     @Override
     public void onDestroyView() {
         try {
-            // Unregister listeners
-
             if (handlerSharedPreferences != null) {
                 handlerSharedPreferences.removeOnTimeChangeListener(this);
             }
@@ -272,11 +267,9 @@ public class HomeFragment extends Fragment implements
     @Override
     public void onTodoToggle(Todo todo) {
         try {
-            // Update todo in database
             handlerDB = HandlerDB.getInstance();
             handlerDB.updateTodo(todo);
 
-            // Update UI
             todoAdapter.notifyDataSetChanged();
 
             String message = todo.isCompleted() ? "TODO completed!" : "TODO marked as incomplete";
@@ -306,7 +299,6 @@ public class HomeFragment extends Fragment implements
 
         dialogTitle.setText(title);
 
-        // Pre-fill data if editing
         if (existingTodo != null) {
             editTitle.setText(existingTodo.getTitle());
             editDescription.setText(existingTodo.getDescription());
@@ -329,10 +321,8 @@ public class HomeFragment extends Fragment implements
 
             try {
                 if (existingTodo == null) {
-                    // Add new TODO
                     addTodo(todoTitle, description);
                 } else {
-                    // Update existing TODO
                     updateTodo(existingTodo, todoTitle, description);
                 }
                 dialog.dismiss();
@@ -349,12 +339,10 @@ public class HomeFragment extends Fragment implements
         try {
             Todo newTodo = new Todo(title, description);
 
-            // Save to database
             handlerDB = HandlerDB.getInstance();
             long todoId = handlerDB.addTodo(newTodo);
             newTodo.setId(todoId);
 
-            // Add to list and update UI
             todoList.add(0, newTodo); // Add to top
             todoAdapter.notifyItemInserted(0);
             updateEmptyTodosView();
@@ -371,11 +359,9 @@ public class HomeFragment extends Fragment implements
             todo.setTitle(title);
             todo.setDescription(description);
 
-            // Update in database
             handlerDB = HandlerDB.getInstance();
             handlerDB.updateTodo(todo);
 
-            // Update UI
             todoAdapter.notifyDataSetChanged();
 
             Toast.makeText(getContext(), "TODO updated successfully!", Toast.LENGTH_SHORT).show();
@@ -396,11 +382,9 @@ public class HomeFragment extends Fragment implements
 
     private void deleteTodo(Todo todo) {
         try {
-            // Remove from database
             handlerDB = HandlerDB.getInstance();
             handlerDB.deleteTodo(todo.getId());
 
-            // Remove from list and update UI
             int position = todoList.indexOf(todo);
             if (position != -1) {
                 todoList.remove(position);
@@ -433,23 +417,18 @@ public class HomeFragment extends Fragment implements
 
     private void setupTodoComponents() {
         try {
-            // Initialize TODO list and adapter
             todoList = new ArrayList<>();
             todoAdapter = new HandlerTodo(todoList, this);
 
-            // Setup RecyclerView
             recyclerTodos = rootView.findViewById(R.id.recycler_todos);
             recyclerTodos.setLayoutManager(new LinearLayoutManager(getContext()));
             recyclerTodos.setAdapter(todoAdapter);
-
-            // Handle empty TODO list view
             textEmptyTodos = rootView.findViewById(R.id.text_empty_todos);
 
-            // Setup FAB click listener
+
             fabAddTodo = rootView.findViewById(R.id.fab_add_todo);
             fabAddTodo.setOnClickListener(v -> showAddTodoDialog());
 
-            // Load existing TODOs from database
             loadTodosFromDatabase();
 
         } catch (Exception e) {

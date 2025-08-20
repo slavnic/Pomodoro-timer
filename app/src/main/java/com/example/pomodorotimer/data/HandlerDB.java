@@ -10,9 +10,11 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -324,7 +326,7 @@ public class HandlerDB extends SQLiteOpenHelper {
             SQLiteDatabase db = this.getReadableDatabase();
 
             // Format year-month for query
-            String yearMonth = String.format("%04d-%02d", year, month + 1); // month+1 jer Calendar.MONTH počinje od 0
+            String yearMonth = String.format("%04d-%02d", year, month + 1); // month+1 because Calendar.MONTH starts from 0
 
             String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + "), SUM(" + KEY_SESSION_COUNT + ") FROM " +
                     TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " LIKE ?";
@@ -352,11 +354,8 @@ public class HandlerDB extends SQLiteOpenHelper {
 
         try {
             SQLiteDatabase db = this.getReadableDatabase();
-
-            // Format year-month for query
             String yearMonth = String.format("%04d-%02d", year, month + 1);
 
-            // Čitaj break minute iz glavne tabele
             String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " +
                     TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " LIKE ?";
             Cursor cursor = db.rawQuery(query, new String[]{yearMonth + "%"});
@@ -402,7 +401,6 @@ public class HandlerDB extends SQLiteOpenHelper {
 
         try {
             SQLiteDatabase db = this.getReadableDatabase();
-            // Čitaj break minute iz glavne tabele gde se čuvaju kompletne sesije
             String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
             Cursor cursor = db.rawQuery(query, new String[]{dateString});
 
@@ -554,7 +552,6 @@ public class HandlerDB extends SQLiteOpenHelper {
     public Map<String, Integer> getMonthlyStatistics(int year, int month) throws Exception {
         SQLiteDatabase db = getReadableDatabase();
 
-        // Format month to match your date format (month is 0-based in Calendar)
         String monthStr = String.format("%04d-%02d", year, month + 1);
 
         String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + "), SUM(" + KEY_BREAK_TIME_MINUTES + "), SUM(" + KEY_SESSION_COUNT + ") " +
@@ -577,19 +574,16 @@ public class HandlerDB extends SQLiteOpenHelper {
         return stats;
     }
 
-    // Method to save break time (call this when break session ends)
     public void saveBreakTime(Date date, int breakMinutes) throws Exception {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String dateString = sdf.format(date);
 
         SQLiteDatabase db = getWritableDatabase();
 
-        // Check if record exists for this date
         Cursor cursor = db.query(TABLE_WORK_SESSIONS, null, KEY_DATE + "=?",
                 new String[]{dateString}, null, null, null);
 
         if (cursor.moveToFirst()) {
-            // Update existing record - use getColumnIndexOrThrow instead
             int breakTimeColumnIndex = cursor.getColumnIndex(KEY_BREAK_TIME_MINUTES);
             int currentBreakTime = 0;
             if (breakTimeColumnIndex != -1) {
@@ -599,7 +593,6 @@ public class HandlerDB extends SQLiteOpenHelper {
             values.put(KEY_BREAK_TIME_MINUTES, currentBreakTime + breakMinutes);
             db.update(TABLE_WORK_SESSIONS, values, KEY_DATE + "=?", new String[]{dateString});
         } else {
-            // Create new record
             ContentValues values = new ContentValues();
             values.put(KEY_DATE, dateString);
             values.put(KEY_WORK_TIME_MINUTES, 0);
@@ -790,5 +783,40 @@ public class HandlerDB extends SQLiteOpenHelper {
         }
         db.close();
         return todo;
+    }
+
+    public List<Map<String, String>> getAllStatisticsData() {
+        List<Map<String, String>> statisticsData = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        try {
+            String query = "SELECT " + KEY_DATE + ", " +
+                          "SUM(" + KEY_WORK_TIME_MINUTES + ") as total_work_minutes, " +
+                          "SUM(" + KEY_BREAK_TIME_MINUTES + ") as total_break_minutes, " +
+                          "SUM(" + KEY_SESSION_COUNT + ") as total_sessions " +
+                          "FROM " + TABLE_WORK_SESSIONS + " " +
+                          "GROUP BY " + KEY_DATE + " " +
+                          "ORDER BY " + KEY_DATE + " DESC";
+
+            Cursor cursor = db.rawQuery(query, null);
+
+            if (cursor.moveToFirst()) {
+                do {
+                    Map<String, String> row = new HashMap<>();
+                    row.put("date", cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE)));
+                    row.put("work_minutes", String.valueOf(cursor.getInt(cursor.getColumnIndexOrThrow("total_work_minutes"))));
+                    row.put("break_minutes", String.valueOf(cursor.getInt(cursor.getColumnIndexOrThrow("total_break_minutes"))));
+                    row.put("sessions", String.valueOf(cursor.getInt(cursor.getColumnIndexOrThrow("total_sessions"))));
+                    statisticsData.add(row);
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting all statistics data", e);
+        } finally {
+            db.close();
+        }
+
+        return statisticsData;
     }
 }

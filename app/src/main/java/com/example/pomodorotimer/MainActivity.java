@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.example.pomodorotimer.data.HandlerDB;
 import com.example.pomodorotimer.ui.statistics.StatisticsFragment;
 import com.example.pomodorotimer.ui.settings.SettingsFragment;
 import com.example.pomodorotimer.ui.home.HomeFragment;
@@ -48,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+//        HandlerDB db = HandlerDB.getInstance(this);
+//        db.clearAllData();
 
         // Initialize HandlerSharedPreferences
         HandlerSharedPreferences.getInstance(this);

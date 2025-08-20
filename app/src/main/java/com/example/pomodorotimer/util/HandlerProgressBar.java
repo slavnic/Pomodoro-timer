@@ -237,8 +237,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
 
     @Override
     public void onDailyGoalChanged(int newDailyGoal) {
-        Log.d(TAG, "onDailyGoalChanged: " + newDailyGoal + " sessions");
-
         if (numberProgressBar != null && context != null) {
             if (context instanceof android.app.Activity) {
                 ((android.app.Activity) context).runOnUiThread(() -> {

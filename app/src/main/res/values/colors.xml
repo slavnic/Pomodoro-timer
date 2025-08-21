@@ -23,6 +23,6 @@
     <color name="breakColor">#FFB74D</color>
     <color name="breakColorDark">#FF8F00</color>
 
-    <color name="longBreakColor">#F44336</color>
-    <color name="longBreakColorDark">#C62828</color>
+    <color name="longBreakColor">#8BC34A</color>
+    <color name="longBreakColorDark">#4CAF50</color>
 </resources>

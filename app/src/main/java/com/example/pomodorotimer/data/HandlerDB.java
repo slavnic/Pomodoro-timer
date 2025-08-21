@@ -22,17 +22,13 @@ public class HandlerDB extends SQLiteOpenHelper {
 
     private static final String TAG = "HandlerDB";
     private static final String DATABASE_NAME = "work_timer.db";
-    private static final int DATABASE_VERSION = 6; // Increment version to remove unused tables and fix data handling
-
-    // Work sessions table - the only table we actually need for work/break data
+    private static final int DATABASE_VERSION = 6;
     private static final String TABLE_WORK_SESSIONS = "work_sessions";
     private static final String KEY_ID = "id";
     private static final String KEY_DATE = "date";
     private static final String KEY_WORK_TIME_MINUTES = "work_time_minutes";
     private static final String KEY_SESSION_COUNT = "session_count";
     private static final String KEY_BREAK_TIME_MINUTES = "break_time_minutes";
-
-    // TODO table
     private static final String TABLE_TODOS = "todos";
     private static final String KEY_TODO_ID = "id";
     private static final String KEY_TODO_TITLE = "title";
@@ -71,16 +67,14 @@ public class HandlerDB extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create work sessions table - stores daily totals
         String CREATE_WORK_SESSIONS_TABLE = "CREATE TABLE " + TABLE_WORK_SESSIONS + "("
                 + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + KEY_DATE + " TEXT UNIQUE NOT NULL," // UNIQUE constraint to prevent duplicates
+                + KEY_DATE + " TEXT UNIQUE NOT NULL,"
                 + KEY_WORK_TIME_MINUTES + " INTEGER DEFAULT 0,"
                 + KEY_SESSION_COUNT + " INTEGER DEFAULT 0,"
                 + KEY_BREAK_TIME_MINUTES + " INTEGER DEFAULT 0"
                 + ")";
 
-        // Create TODOs table
         String CREATE_TODOS_TABLE = "CREATE TABLE " + TABLE_TODOS + "("
                 + KEY_TODO_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + KEY_TODO_TITLE + " TEXT NOT NULL,"
@@ -130,12 +124,10 @@ public class HandlerDB extends SQLiteOpenHelper {
         }
         if (oldVersion < 6) {
             try {
-                // Drop unused tables
                 db.execSQL("DROP TABLE IF EXISTS break_sessions");
                 db.execSQL("DROP TABLE IF EXISTS long_break_sessions");
                 Log.d(TAG, "Dropped unused break tables");
 
-                // Add UNIQUE constraint to date column if not exists
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_date_unique ON " + TABLE_WORK_SESSIONS + "(" + KEY_DATE + ")");
                 Log.d(TAG, "Added unique constraint to date column");
             } catch (Exception e) {
@@ -149,13 +141,11 @@ public class HandlerDB extends SQLiteOpenHelper {
             SQLiteDatabase db = this.getWritableDatabase();
             String currentDate = getCurrentDate();
 
-            // Prvo proveri da li postoji red za današnji datum
             Cursor cursor = db.query(TABLE_WORK_SESSIONS,
                     new String[]{KEY_WORK_TIME_MINUTES, KEY_SESSION_COUNT, KEY_BREAK_TIME_MINUTES},
                     KEY_DATE + "=?", new String[]{currentDate}, null, null, null);
 
             if (cursor.moveToFirst()) {
-                // Red postoji - saberi sa postojećim vrednostima
                 int currentWorkMinutes = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_WORK_TIME_MINUTES));
                 int currentSessionCount = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_SESSION_COUNT));
                 int currentBreakMinutes = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_BREAK_TIME_MINUTES));
@@ -173,7 +163,6 @@ public class HandlerDB extends SQLiteOpenHelper {
                             + (currentWorkMinutes + workMinutes) + "min, sessions=" + (currentSessionCount + 1));
                 }
             } else {
-                // Red ne postoji - kreiraj novi
                 ContentValues values = new ContentValues();
                 values.put(KEY_DATE, currentDate);
                 values.put(KEY_WORK_TIME_MINUTES, workMinutes);
@@ -195,99 +184,6 @@ public class HandlerDB extends SQLiteOpenHelper {
             throw e;
         }
     }
-
-    public Map<String, Float> getDailyWorkTime() {
-        Map<String, Float> dailyData = new HashMap<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        String query = "SELECT " + KEY_DATE + ", SUM(" + KEY_WORK_TIME_MINUTES + ") as total_minutes " +
-                "FROM " + TABLE_WORK_SESSIONS + " " +
-                "WHERE " + KEY_DATE + " >= date('now', '-30 days') " +
-                "GROUP BY " + KEY_DATE + " " +
-                "ORDER BY " + KEY_DATE;
-
-        Cursor cursor = db.rawQuery(query, null);
-
-        try {
-            if (cursor.moveToFirst()) {
-                do {
-                    String date = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE));
-                    float totalMinutes = cursor.getFloat(cursor.getColumnIndexOrThrow("total_minutes"));
-                    float totalHours = totalMinutes / 60f; // Convert to hours
-                    dailyData.put(date, totalHours);
-                    Log.d(TAG, "Daily data - Date: " + date + ", Hours: " + totalHours);
-                } while (cursor.moveToNext());
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting daily work time: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            cursor.close();
-            db.close();
-        }
-
-        return dailyData;
-    }
-
-
-
-    public Map<Integer, Float> getMonthlyWorkTime() {
-        Map<Integer, Float> monthlyData = new HashMap<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        String query = "SELECT strftime('%m', " + KEY_DATE + ") as month, " +
-                "SUM(" + KEY_WORK_TIME_MINUTES + ") as total_minutes " +
-                "FROM " + TABLE_WORK_SESSIONS + " " +
-                "WHERE strftime('%Y', " + KEY_DATE + ") = strftime('%Y', 'now') " +
-                "GROUP BY strftime('%m', " + KEY_DATE + ") " +
-                "ORDER BY month";
-
-        Cursor cursor = db.rawQuery(query, null);
-
-        try {
-            if (cursor.moveToFirst()) {
-                do {
-                    int month = cursor.getInt(cursor.getColumnIndexOrThrow("month"));
-                    float totalMinutes = cursor.getFloat(cursor.getColumnIndexOrThrow("total_minutes"));
-                    float totalHours = totalMinutes / 60f; // Convert to hours
-                    monthlyData.put(month - 1, totalHours); // Month index 0-11 for chart
-                    Log.d(TAG, "Monthly data - Month: " + month + ", Hours: " + totalHours);
-                } while (cursor.moveToNext());
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting monthly work time: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            cursor.close();
-            db.close();
-        }
-
-        return monthlyData;
-    }
-
-    public int getTotalBreakMinutesToday() {
-        int totalBreakMinutes = 0;
-        String currentDate = getCurrentDate();
-
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
-            Cursor cursor = db.rawQuery(query, new String[]{currentDate});
-
-            if (cursor.moveToFirst()) {
-                totalBreakMinutes = cursor.getInt(0);
-            }
-            cursor.close();
-            db.close();
-
-            Log.d(TAG, "Total break minutes today: " + totalBreakMinutes);
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting total break minutes", e);
-        }
-
-        return totalBreakMinutes;
-    }
-
     public int getTotalSessionsToday() {
         int totalSessions = 0;
         String currentDate = getCurrentDate();
@@ -412,117 +308,9 @@ public class HandlerDB extends SQLiteOpenHelper {
         return totalBreakMinutes;
     }
 
-    public int getTotalWorkMinutesToday() {
-        int totalWorkMinutes = 0;
-        String currentDate = getCurrentDate();
-
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " = ?";
-            Cursor cursor = db.rawQuery(query, new String[]{currentDate});
-
-            if (cursor.moveToFirst()) {
-                totalWorkMinutes = cursor.getInt(0);
-            }
-            cursor.close();
-            db.close();
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting total work minutes", e);
-        }
-
-        return totalWorkMinutes;
-    }
-
-    public float getTodayWorkTime() {
-        String currentDate = getCurrentDate();
-        SQLiteDatabase db = this.getReadableDatabase();
-        float todayHours = 0f;
-
-        String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + ") as total_minutes " +
-                "FROM " + TABLE_WORK_SESSIONS + " " +
-                "WHERE " + KEY_DATE + " = ?";
-
-        Cursor cursor = db.rawQuery(query, new String[]{currentDate});
-
-        try {
-            if (cursor.moveToFirst()) {
-                float totalMinutes = cursor.getFloat(cursor.getColumnIndexOrThrow("total_minutes"));
-                todayHours = totalMinutes / 60f;
-                Log.d(TAG, "Today's work time: " + todayHours + " hours");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting today's work time: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            cursor.close();
-            db.close();
-        }
-
-        return todayHours;
-    }
-
-    public int getTodaySessionCount() {
-        String currentDate = getCurrentDate();
-        SQLiteDatabase db = this.getReadableDatabase();
-        int sessionCount = 0;
-
-        String query = "SELECT " + KEY_SESSION_COUNT + " " +
-                "FROM " + TABLE_WORK_SESSIONS + " " +
-                "WHERE " + KEY_DATE + " = ?";
-
-        Cursor cursor = db.rawQuery(query, new String[]{currentDate});
-
-        try {
-            if (cursor.moveToFirst()) {
-                sessionCount = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_SESSION_COUNT));
-                Log.d(TAG, "Today's completed sessions: " + sessionCount);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting today's session count: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            cursor.close();
-            db.close();
-        }
-
-        return sessionCount;
-    }
-
     private String getCurrentDate() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         return sdf.format(new Date());
-    }
-
-    public void cleanupDuplicateEntries() {
-        try {
-            SQLiteDatabase db = this.getWritableDatabase();
-
-            // Kreiraj novu tabelu sa ispravnim podacima
-            db.execSQL("CREATE TEMP TABLE work_sessions_temp AS " +
-                    "SELECT " + KEY_DATE + ", " +
-                    "SUM(" + KEY_WORK_TIME_MINUTES + ") as " + KEY_WORK_TIME_MINUTES + ", " +
-                    "SUM(" + KEY_SESSION_COUNT + ") as " + KEY_SESSION_COUNT + ", " +
-                    "SUM(" + KEY_BREAK_TIME_MINUTES + ") as " + KEY_BREAK_TIME_MINUTES + " " +
-                    "FROM " + TABLE_WORK_SESSIONS + " " +
-                    "GROUP BY " + KEY_DATE);
-
-            // Obriši originalnu tabelu
-            db.execSQL("DELETE FROM " + TABLE_WORK_SESSIONS);
-
-            // Vrati podatke iz temp tabele
-            db.execSQL("INSERT INTO " + TABLE_WORK_SESSIONS + " (" + KEY_DATE + ", " +
-                    KEY_WORK_TIME_MINUTES + ", " + KEY_SESSION_COUNT + ", " + KEY_BREAK_TIME_MINUTES + ") " +
-                    "SELECT " + KEY_DATE + ", " + KEY_WORK_TIME_MINUTES + ", " +
-                    KEY_SESSION_COUNT + ", " + KEY_BREAK_TIME_MINUTES + " FROM work_sessions_temp");
-
-            // Obriši temp tabelu
-            db.execSQL("DROP TABLE work_sessions_temp");
-
-            db.close();
-            Log.d(TAG, "Duplicate entries cleaned up successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error cleaning up duplicate entries", e);
-        }
     }
 
     public void clearAllData() {
@@ -536,104 +324,6 @@ public class HandlerDB extends SQLiteOpenHelper {
         } finally {
             db.close();
         }
-    }
-
-    public int getTotalMinutesForDate(Date date) throws Exception {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String dateString = sdf.format(date);
-
-        SQLiteDatabase db = getReadableDatabase();
-
-        String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS +
-                " WHERE " + KEY_DATE + " = ?";
-
-        Cursor cursor = db.rawQuery(query, new String[]{dateString});
-
-        int totalMinutes = 0;
-        if (cursor.moveToFirst()) {
-            totalMinutes = cursor.getInt(0);
-        }
-
-        cursor.close();
-        return totalMinutes;
-    }
-
-    public int getTotalBreakTimeForDate(Date date) throws Exception {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String dateString = sdf.format(date);
-
-        SQLiteDatabase db = getReadableDatabase();
-        String query = "SELECT SUM(" + KEY_BREAK_TIME_MINUTES + ") FROM " + TABLE_WORK_SESSIONS +
-                " WHERE " + KEY_DATE + " = ?";
-
-        Cursor cursor = db.rawQuery(query, new String[]{dateString});
-        int totalBreakTime = 0;
-        if (cursor.moveToFirst()) {
-            totalBreakTime = cursor.getInt(0);
-        }
-        cursor.close();
-        return totalBreakTime;
-    }
-
-    public Map<String, Integer> getMonthlyStatistics(int year, int month) throws Exception {
-        SQLiteDatabase db = getReadableDatabase();
-
-        String monthStr = String.format("%04d-%02d", year, month + 1);
-
-        String query = "SELECT SUM(" + KEY_WORK_TIME_MINUTES + "), SUM(" + KEY_BREAK_TIME_MINUTES + "), SUM(" + KEY_SESSION_COUNT + ") " +
-                "FROM " + TABLE_WORK_SESSIONS + " WHERE " + KEY_DATE + " LIKE ?";
-
-        Cursor cursor = db.rawQuery(query, new String[]{monthStr + "%"});
-
-        Map<String, Integer> stats = new HashMap<>();
-        if (cursor.moveToFirst()) {
-            stats.put("workTime", cursor.getInt(0));
-            stats.put("breakTime", cursor.getInt(1));
-            stats.put("sessions", cursor.getInt(2));
-        } else {
-            stats.put("workTime", 0);
-            stats.put("breakTime", 0);
-            stats.put("sessions", 0);
-        }
-
-        cursor.close();
-        return stats;
-    }
-
-    public void saveBreakTime(Date date, int breakMinutes) throws Exception {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String dateString = sdf.format(date);
-
-        SQLiteDatabase db = getWritableDatabase();
-
-        Cursor cursor = db.query(TABLE_WORK_SESSIONS,
-                new String[]{KEY_WORK_TIME_MINUTES, KEY_SESSION_COUNT, KEY_BREAK_TIME_MINUTES},
-                KEY_DATE + "=?", new String[]{dateString}, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            // Red postoji - saberi break vreme sa postojećim
-            int currentWorkMinutes = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_WORK_TIME_MINUTES));
-            int currentSessionCount = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_SESSION_COUNT));
-            int currentBreakTime = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_BREAK_TIME_MINUTES));
-
-            ContentValues values = new ContentValues();
-            values.put(KEY_WORK_TIME_MINUTES, currentWorkMinutes);
-            values.put(KEY_SESSION_COUNT, currentSessionCount);
-            values.put(KEY_BREAK_TIME_MINUTES, currentBreakTime + breakMinutes);
-
-            db.update(TABLE_WORK_SESSIONS, values, KEY_DATE + "=?", new String[]{dateString});
-        } else {
-            // Red ne postoji - kreiraj novi samo sa break vremenom
-            ContentValues values = new ContentValues();
-            values.put(KEY_DATE, dateString);
-            values.put(KEY_WORK_TIME_MINUTES, 0);
-            values.put(KEY_BREAK_TIME_MINUTES, breakMinutes);
-            values.put(KEY_SESSION_COUNT, 0);
-            db.insert(TABLE_WORK_SESSIONS, null, values);
-        }
-
-        cursor.close();
-        db.close();
     }
 
     public int getSessionCountForDate(Date date) {
@@ -662,13 +352,11 @@ public class HandlerDB extends SQLiteOpenHelper {
             SQLiteDatabase db = this.getWritableDatabase();
             String currentDate = getCurrentDate();
 
-            // Proveri da li postoji red za današnji datum
             Cursor cursor = db.query(TABLE_WORK_SESSIONS,
                     new String[]{KEY_WORK_TIME_MINUTES, KEY_SESSION_COUNT, KEY_BREAK_TIME_MINUTES},
                     KEY_DATE + "=?", new String[]{currentDate}, null, null, null);
 
             if (cursor.moveToFirst()) {
-                // Red postoji - saberi sa postojećim vrednostima
                 int currentWorkMinutes = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_WORK_TIME_MINUTES));
                 int currentSessionCount = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_SESSION_COUNT));
                 int currentBreakMinutes = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_BREAK_TIME_MINUTES));
@@ -688,7 +376,6 @@ public class HandlerDB extends SQLiteOpenHelper {
                             ", break=" + (currentBreakMinutes + breakMinutes) + "min");
                 }
             } else {
-                // Red ne postoji - kreiraj novi
                 ContentValues values = new ContentValues();
                 values.put(KEY_DATE, currentDate);
                 values.put(KEY_WORK_TIME_MINUTES, workMinutes);
@@ -710,7 +397,6 @@ public class HandlerDB extends SQLiteOpenHelper {
         }
     }
 
-    // TODO CRUD operations
     public long addTodo(com.example.pomodorotimer.model.Todo todo) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -772,26 +458,6 @@ public class HandlerDB extends SQLiteOpenHelper {
         db.close();
 
         Log.d(TAG, "TODO deleted: " + result + " rows affected");
-    }
-
-    public com.example.pomodorotimer.model.Todo getTodo(long todoId) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_TODOS, new String[]{KEY_TODO_ID, KEY_TODO_TITLE,
-                        KEY_TODO_DESCRIPTION, KEY_TODO_IS_COMPLETED, KEY_TODO_DATE_CREATED}, KEY_TODO_ID + "=?",
-                new String[]{String.valueOf(todoId)}, null, null, null, null);
-
-        com.example.pomodorotimer.model.Todo todo = null;
-        if (cursor != null && cursor.moveToFirst()) {
-            todo = new com.example.pomodorotimer.model.Todo();
-            todo.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_TODO_ID)));
-            todo.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_TITLE)));
-            todo.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_DESCRIPTION)));
-            todo.setCompleted(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TODO_IS_COMPLETED)) == 1);
-            todo.setDateCreated(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TODO_DATE_CREATED)));
-            cursor.close();
-        }
-        db.close();
-        return todo;
     }
 
     public List<Map<String, String>> getAllStatisticsData() {

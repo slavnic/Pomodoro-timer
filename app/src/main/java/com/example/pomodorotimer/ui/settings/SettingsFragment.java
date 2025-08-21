@@ -28,16 +28,13 @@ public class SettingsFragment extends Fragment {
     private Switch switchTimeUnit;
 
     private HandlerSharedPreferences handlerSharedPreferences;
-    private boolean isSecondsMode = false; // false = minutes, true = seconds
+    private boolean isSecondsMode = false;
 
-    // Default values
     private static final int DEFAULT_WORK_DURATION = 25;
     private static final int DEFAULT_SHORT_BREAK = 5;
     private static final int DEFAULT_LONG_BREAK = 15;
     private static final int DEFAULT_SESSIONS = 4;
     private static final int DEFAULT_DAILY_GOAL = 8;
-
-    // Testing defaults (in seconds)
     private static final int TEST_WORK_DURATION = 10;
     private static final int TEST_SHORT_BREAK = 5;
     private static final int TEST_LONG_BREAK = 15;
@@ -84,21 +81,19 @@ public class SettingsFragment extends Fragment {
         switchTimeUnit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             isSecondsMode = isChecked;
             updateSeekBarRanges();
-            loadSettings(); // Reload settings with new unit
+            loadSettings();
         });
     }
 
     private void updateSeekBarRanges() {
         if (isSecondsMode) {
-            // Set ranges for seconds mode (good for testing)
-            seekBarWorkDuration.setMax(60); // 1-60 seconds
-            seekBarShortBreak.setMax(30);   // 1-30 seconds
-            seekBarLongBreak.setMax(60);    // 5-60 seconds
+            seekBarWorkDuration.setMax(60);
+            seekBarShortBreak.setMax(30);
+            seekBarLongBreak.setMax(60);
         } else {
-            // Set ranges for minutes mode (normal use)
-            seekBarWorkDuration.setMax(60); // 1-60 minutes
-            seekBarShortBreak.setMax(30);   // 1-30 minutes
-            seekBarLongBreak.setMax(60);    // 5-60 minutes
+            seekBarWorkDuration.setMax(60);
+            seekBarShortBreak.setMax(30);
+            seekBarLongBreak.setMax(60);
         }
     }
 
@@ -237,24 +232,20 @@ public class SettingsFragment extends Fragment {
             String unit;
 
             if (isSecondsMode) {
-                // Convert milliseconds to seconds
                 workValue = (int) (workTimeMs / 1000);
                 breakValue = (int) (breakTimeMs / 1000);
                 longBreakValue = (int) (longBreakTimeMs / 1000);
                 unit = " seconds";
 
-                // Clamp values to reasonable ranges for seconds mode
                 workValue = Math.max(1, Math.min(60, workValue));
                 breakValue = Math.max(1, Math.min(30, breakValue));
                 longBreakValue = Math.max(5, Math.min(60, longBreakValue));
             } else {
-                // Convert milliseconds to minutes
                 workValue = (int) (workTimeMs / (1000 * 60));
                 breakValue = (int) (breakTimeMs / (1000 * 60));
                 longBreakValue = (int) (longBreakTimeMs / (1000 * 60));
                 unit = " minutes";
 
-                // Clamp values to reasonable ranges for minutes mode
                 workValue = Math.max(1, Math.min(60, workValue));
                 breakValue = Math.max(1, Math.min(30, breakValue));
                 longBreakValue = Math.max(5, Math.min(60, longBreakValue));

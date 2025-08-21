@@ -50,13 +50,12 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-//        HandlerDB db = HandlerDB.getInstance(this);
-//        db.clearAllData();
+        //For clearing Data
+        //HandlerDB db = HandlerDB.getInstance(this);
+        //db.clearAllData();
 
-        // Initialize HandlerSharedPreferences
         HandlerSharedPreferences.getInstance(this);
 
-        // Initialize views and setup UI
         initializeViews();
         setupViewPager();
     }

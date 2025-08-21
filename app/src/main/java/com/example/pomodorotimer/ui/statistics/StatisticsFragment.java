@@ -314,34 +314,6 @@ public class StatisticsFragment extends Fragment {
         }
     }
 
-    private void shareFile(File file, String mimeType) {
-        try {
-            Uri fileUri;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                fileUri = FileProvider.getUriForFile(
-                    getContext(),
-                    getContext().getPackageName() + ".fileprovider",
-                    file
-                );
-            } else {
-                fileUri = Uri.fromFile(file);
-            }
-
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType(mimeType);
-            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
-            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Pomodoro Statistics");
-            shareIntent.putExtra(Intent.EXTRA_TEXT, "Here are your Pomodoro statistics.");
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(Intent.createChooser(shareIntent, "Share file with..."));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "Error sharing file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void updateViewVisibility() {
         if (isDailyView) {
             dailyStatsLayout.setVisibility(View.VISIBLE);

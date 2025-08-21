@@ -23,8 +23,7 @@ public class HandlerCountDownTime {
     private static boolean itWillBeStartAtNextState;
     private static boolean isCountdownRunning = false;
     private OnWorkSessionCompletedListener workSessionCompletedListener;
-    private static Context context; // Add context for HandlerSound
-
+    private static Context context;
     private static long currentWorkMinutes = 0;
     private static boolean workCompleted = false;
     private static TimerMode currentMode = TimerMode.WORK;
@@ -174,14 +173,12 @@ public class HandlerCountDownTime {
     public static void setCountDown(@NotNull View root) {
         itWillBeStartAtNextState = true;
 
-        // Store context for HandlerSound
         context = root.getContext();
 
         mCvCountdownView = root.findViewById(R.id.countDown);
 
         try {
             long timeInMilliseconds;
-            // Use the correct time based on the current mode
             if (currentMode == TimerMode.WORK) {
                 timeInMilliseconds = HandlerSharedPreferences.getInstance().getWorkTime();
                 Log.d(TAG, "Initial work time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
@@ -192,7 +189,6 @@ public class HandlerCountDownTime {
                 timeInMilliseconds = HandlerSharedPreferences.getInstance().getLongBreakTime();
                 Log.d(TAG, "Initial long break time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
             } else {
-                // fallback to work time
                 timeInMilliseconds = HandlerSharedPreferences.getInstance().getWorkTime();
                 Log.d(TAG, "Fallback: Initial work time set to: " + (timeInMilliseconds / 60000) + " minutes (" + timeInMilliseconds + " ms)");
             }
@@ -272,13 +268,11 @@ public class HandlerCountDownTime {
                         workCompleted = true;
                         Log.d(TAG, "Work completed: " + currentWorkMinutes + " minutes (original: " + workTimeMs + "ms)");
 
-                        // Check if it's time for long break
                         int sessionsBeforeLongBreak = HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak();
                         int todayCompletedSessions = HandlerDB.getInstance().getTotalSessionsToday();
 
                         Log.d(TAG, "Today's completed sessions: " + todayCompletedSessions + ", Sessions before long break: " + sessionsBeforeLongBreak);
 
-                        // Check if next session should be long break (current sessions + 1 would be divisible by sessions before long break)
                         boolean shouldBeLongBreak = ((todayCompletedSessions + 1) % sessionsBeforeLongBreak == 0);
 
                         if (shouldBeLongBreak) {
@@ -316,7 +310,6 @@ public class HandlerCountDownTime {
                         long breakTimeMs = HandlerSharedPreferences.getInstance().getBreakTime();
                         long breakMinutes;
                         if (breakTimeMs < 60000) {
-                            // If less than 1 minute (testing mode), still count as 1 minute for statistics
                             breakMinutes = 1;
                             Log.d(TAG, "Testing mode detected - break time " + breakTimeMs + "ms counted as 1 minute for statistics");
                         } else {
@@ -452,60 +445,8 @@ public class HandlerCountDownTime {
         ContextState.getInstance().pause();
     }
 
-    public void startingOrResume() throws Exception {
-        Log.d(TAG, "startingOrResume: Current mode: " + currentMode);
-
-        if (mCvCountdownView != null) {
-            long remainingTime = mCvCountdownView.getRemainTime();
-
-            if (remainingTime > 0) {
-                mCvCountdownView.start(remainingTime);
-                Log.d(TAG, "Resuming with remaining time: " + remainingTime + " ms");
-            } else {
-                long timeToStart = 0;
-                if (currentMode == TimerMode.WORK) {
-                    timeToStart = HandlerSharedPreferences.getInstance().getWorkTime();
-                } else if (currentMode == TimerMode.BREAK) {
-                    timeToStart = HandlerSharedPreferences.getInstance().getBreakTime();
-                } else if (currentMode == TimerMode.LONG_BREAK) {
-                    timeToStart = HandlerSharedPreferences.getInstance().getLongBreakTime();
-                }
-
-                mCvCountdownView.updateShow(timeToStart);
-                mCvCountdownView.start(timeToStart);
-                Log.d(TAG, "Starting new timer with: " + timeToStart + " ms for mode: " + currentMode);
-            }
-
-            itWillBeStartAtNextState = false;
-            isCountdownRunning = true;
-            ContextState.getInstance().resume();
-        }
-    }
-
     public boolean isRunning() {
         return isCountdownRunning;
-    }
-
-    public void stop() {
-        if (mCvCountdownView != null) {
-            mCvCountdownView.stop();
-            isCountdownRunning = false;
-            itWillBeStartAtNextState = true;
-        }
-    }
-
-    public void setOnWorkSessionCompletedListener(OnWorkSessionCompletedListener listener) {
-        this.workSessionCompletedListener = listener;
-        Log.d(TAG, "Work session completed listener set");
-    }
-
-    private void notifyWorkSessionCompleted() {
-        Log.d(TAG, "Work session completed - notifying listener");
-        if (workSessionCompletedListener != null) {
-            workSessionCompletedListener.onWorkSessionCompleted();
-        } else {
-            Log.w(TAG, "No work session completed listener registered");
-        }
     }
 
     public CountdownView getmCvCountdownView() {

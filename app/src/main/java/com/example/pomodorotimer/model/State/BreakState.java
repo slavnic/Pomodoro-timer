@@ -18,38 +18,24 @@ public class BreakState extends State {
 
     public BreakState() {
     }
-
-    /*START BREAK */
     @SuppressLint("ResourceAsColor")
     @Override
     public void start() {
         Log.d(BREAK_STATE, "I AM IN START.");
 
         try {
-            /*
-             * SET BREAK COLOR AT COUNTDOWN OBJECT
-             * */
             long realSessionsBeforeLongBreak = HandlerTime.getInstance().getRealTime(HandlerSharedPreferences.getInstance().getSessionsBeforeLongBreak());
 
             if (ContextState.getInstance().getCurrentSession() >= realSessionsBeforeLongBreak) {
                 Log.d(BREAK_STATE, "start: " + "I AM IN THE LONG BREAK TIME!");
 
-                /*
-                 * SET LONG BREAK COLOR AND TIMER MODE
-                 */
                 HandlerCountDownTime.getInstance().setLongBreakColor();
                 HandlerCountDownTime.getInstance().setTimerMode(HandlerCountDownTime.TimerMode.LONG_BREAK);
 
-                /*
-                 * RESTART SESSION
-                 * */
                 ContextState.getInstance().setCurrentSession(0);
                 HandlerAlert.getInstance().showToast("Take a Long break");
                 HandlerCountDownTime.getInstance().getmCvCountdownView().start(HandlerSharedPreferences.getInstance().getLongBreakTime());
             } else {
-                /*
-                 * SET REGULAR BREAK COLOR AND TIMER MODE
-                 */
                 HandlerCountDownTime.getInstance().setBreakColor();
                 HandlerCountDownTime.getInstance().setTimerMode(HandlerCountDownTime.TimerMode.BREAK);
 
@@ -62,7 +48,6 @@ public class BreakState extends State {
         }
     }
 
-    /*STOP BREAK */
     @Override
     public void stop() {
         Log.d(BREAK_STATE, "I AM IN STOP.");

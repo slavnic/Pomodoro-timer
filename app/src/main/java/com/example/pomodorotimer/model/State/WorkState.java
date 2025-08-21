@@ -18,16 +18,11 @@ public class WorkState extends State {
 
     public WorkState() {
     }
-
-    /*START STATE*/
     @Override
     public void start() {
         Log.d(WORK_STATE, "I AM IN START.");
 
         try {
-            /*
-             * SET WORK COLOR AND TIMER MODE
-             * */
             HandlerCountDownTime.getInstance().setWorkColor();
             HandlerCountDownTime.getInstance().setTimerMode(HandlerCountDownTime.TimerMode.WORK);
 
@@ -41,15 +36,11 @@ public class WorkState extends State {
         }
     }
 
-    /*STOP STATE*/
     @Override
     public void stop() {
         Log.d(WORK_STATE, "I AM IN STOP.");
 
         try {
-            /*
-             * SAVE COMPLETED WORK SESSION TO DATABASE
-             * */
             long workTimeInMinutes = HandlerSharedPreferences.getInstance().getWorkTime() / (1000 * 60); // Convert milliseconds to minutes
 
             HandlerDB.getInstance().saveWorkSession(workTimeInMinutes);
@@ -58,9 +49,8 @@ public class WorkState extends State {
             State nextState = StateFlyweightFactory.getInstance().getState(BreakState.BREAK_STATE);
             Log.d(WORK_STATE, "Next State -> " + nextState.toString());
             ContextState.setState(nextState);
-            ContextState.getInstance().start(); // PASS TO START STATE
+            ContextState.getInstance().start();
 
-            /*UPDATE PROGRESS BAR WITH COMPLETED SESSION*/
             HandlerProgressBar.getInstance().onSessionCompleted();
 
         } catch (Exception e) {

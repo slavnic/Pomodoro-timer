@@ -24,7 +24,6 @@ public class Todo {
         this.dateCreated = dateCreated;
     }
 
-    // Getters and Setters
     public long getId() {
         return id;
     }

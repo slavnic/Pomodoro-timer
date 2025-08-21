@@ -53,7 +53,6 @@ public class HomeFragment extends Fragment implements
 
         Log.d(TAG, "onCreateView: ");
 
-        /* SET VIEW */
         HandlerColor.setView(rootView);
 
         try {
@@ -250,7 +249,6 @@ public class HomeFragment extends Fragment implements
 
     @Override
     public void onTodoClick(Todo todo) {
-        // Handle todo click - show details or edit
         showEditTodoDialog(todo);
     }
 

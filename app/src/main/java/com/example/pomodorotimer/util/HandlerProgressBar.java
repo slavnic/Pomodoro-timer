@@ -102,12 +102,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         HandlerProgressBar.context = root.getContext();
         init();
     }
-
-    public void setMax(int max) {
-        Log.d(TAG, "setMax: " + max + " sessions");
-        updateProgressBasedOnSessions();
-    }
-
     public void updateDailyGoal(int newDailyGoal) {
         try {
             int currentSessions = HandlerDB.getInstance().getTotalSessionsToday();
@@ -127,41 +121,8 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         }
     }
 
-    private void updateProgressBasedOnSessions() {
-        try {
-            int dailyGoal = (int) HandlerSharedPreferences.getInstance().getDailyGoal();
-            int todaySessionCount = HandlerDB.getInstance().getTotalSessionsToday();
-
-            int progressPercentage = 0;
-            if (dailyGoal > 0) {
-                progressPercentage = Math.min(100, (todaySessionCount * 100) / dailyGoal);
-            }
-
-            Log.d(TAG, "updateProgressBasedOnSessions - setting progress to: " + progressPercentage + "% (" + todaySessionCount + "/" + dailyGoal + " sessions)");
-            if (numberProgressBar != null) {
-                numberProgressBar.setProgress(progressPercentage);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating progress based on sessions", e);
-        }
-    }
-
     public int getProgress() {
         return numberProgressBar != null ? numberProgressBar.getProgress() : 0;
-    }
-
-    public void setPercent(int percent) {
-        Log.d(TAG, "setPercent: " + percent + "%");
-        if (numberProgressBar != null) {
-            numberProgressBar.setProgress(percent);
-        }
-    }
-
-    public void resetDailyProgress() {
-        Log.d(TAG, "resetDailyProgress - resetting to 0% due to daily goal change");
-        if (numberProgressBar != null) {
-            numberProgressBar.setProgress(0);
-        }
     }
 
     public void initializeTodayProgress() {
@@ -175,26 +136,6 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
 
         } catch (Exception e) {
             Log.e(TAG, "Error initializing today's progress", e);
-        }
-    }
-
-    public void incrementTodaysProgress() {
-        try {
-            int dailyGoal = (int) HandlerSharedPreferences.getInstance().getDailyGoal();
-            if (dailyGoal > 0) {
-                int currentSessions = HandlerDB.getInstance().getTotalSessionsToday();
-
-                int progressPercentage = Math.min(100, (currentSessions * 100) / dailyGoal);
-                Log.d(TAG, "incrementTodaysProgress - setting progress to: " + progressPercentage + "% (" + currentSessions + "/" + dailyGoal + " sessions)");
-
-                if (numberProgressBar != null) {
-                    numberProgressBar.setProgress(progressPercentage);
-                }
-            } else {
-                Log.w(TAG, "Daily goal is 0, cannot increment progress");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error incrementing today's progress", e);
         }
     }
 
@@ -253,33 +194,9 @@ public class HandlerProgressBar implements HandlerSharedPreferences.OnDailyGoalC
         }
     }
 
-    public void onDailyGoalChanged() {
-        Log.d(TAG, "Daily goal changed - updating progress bar");
-        try {
-            int completedSessions = HandlerDB.getInstance().getTotalSessionsToday();
-            int newDailyGoal = HandlerSharedPreferences.getInstance().getDailyGoal();
-
-            Log.d(TAG, "New daily goal: " + newDailyGoal + ", Completed sessions: " + completedSessions);
-            updateProgressBar(completedSessions, newDailyGoal);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating progress bar after daily goal change", e);
-        }
-    }
-
     public void refreshProgress() {
         Log.d(TAG, "Refreshing progress bar");
         initializeTodayProgress();
     }
 
-
-    public void destroy() {
-        try {
-            if (instance != null) {
-                HandlerSharedPreferences.getInstance().removeDailyGoalChangeListener(instance);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }
